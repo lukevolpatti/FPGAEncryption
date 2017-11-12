@@ -73,7 +73,8 @@ result5, result6,
 k0, k1, k2, k3, v0, v1;
 
 localparam delta = 32'h9e3779b9,
-			  max_u_int = 32'd4294967296;
+			  // max_u_int = 32'd4294967296;
+			  max_u_int = 33'd4294967296;
 			  /*k1 = 32'd32;
 			  k2 = 32'd324;
 			  k3 = 32'd1232;
@@ -178,8 +179,9 @@ module control (
 );
 
     reg [5:0] current_state, next_state; 
-	 reg [4:0] counter = 5'd0;
-    
+	 // reg [4:0] counter = 5'd0;
+     reg [5:0] counter = 6'd0;
+	  
     localparam  LOAD_V0        = 5'd0,
                 LOAD_V0_WAIT   = 5'd1,
                 LOAD_V1        = 5'd2,
@@ -255,7 +257,7 @@ module control (
 					 
 					 E_RESULTS: next_state = E_V;
 					 
-					 E_V: next_state = (counter == 5'd32) ? E_DISPLAY_V0: E_SUM;
+					 E_V: next_state = (counter == 6'd32/*counter == 5'd32*/) ? E_DISPLAY_V0: E_SUM;
 					 
 					 E_DISPLAY_V0: next_state = E_DISPLAY_V1;
 					 
@@ -267,7 +269,7 @@ module control (
 					 
 					 D_V: next_state = D_SUM;
 					 
-					 D_SUM: next_state = (counter == 5'd32) ? D_DISPLAY_V0: D_RESULTS;/*D_MOD_SUM;*/
+					 D_SUM: next_state = (counter == 6'd32/*counter == 5'd32*/) ? D_DISPLAY_V0: D_RESULTS;/*D_MOD_SUM;*/
 	
 					 // D_MOD_SUM: next_state = (counter == 5'd32) ? D_DISPLAY_V0: D_RESULTS;
 					 
@@ -400,22 +402,26 @@ module control (
 				
 				if (current_state == E_SUM)
 		      begin
-              counter <= counter + 5'd1;
+              // counter <= counter + 5'd1;
+				  counter <= counter + 6'd1;
 			   end
 				
 				if (current_state == /*D_MOD_SUM*/D_SUM)
 		      begin
-              counter <= counter + 5'd1;
+              // counter <= counter + 5'd1;
+				  counter <= counter + 6'd1;
 			   end
 				
 				if (current_state == WAIT_FOR_ENCRYPT)
 		      begin
-              counter <= 5'd0;
+              // counter <= 5'd0;
+				  counter <= 6'd0;
 			   end
 				
 				if (current_state == WAIT_FOR_DECRYPT)
 		      begin
-              counter <= 5'd0;
+              // counter <= 5'd0;
+				  counter <= 6'd0;
 			   end
 		  end
     end // state_FFS
