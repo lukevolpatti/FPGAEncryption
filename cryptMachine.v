@@ -110,11 +110,7 @@ localparam delta = 32'h9e3779b9,
 				
 				if (setSum) sum <= 32'hC6EF3720;
 				
-				if (modSum) begin 
-				
-					if (sum[31] == 1'b1) sum[31] <= 1'b0;
-				
-				end
+				// if (modSum) sum <= sum % max_u_int;
 				
             if(ld_sum_enc)
                 sum <= sum + delta; 
@@ -273,9 +269,9 @@ module control (
 					 
 					 D_V: next_state = D_SUM;
 					 
-					 D_SUM: next_state = /*(counter == 6'd32 counter == 5'd32) ? D_DISPLAY_V0: D_RESULTS;*/D_MOD_SUM;
+					 D_SUM: next_state = (counter == 6'd32/*counter == 5'd32*/) ? D_DISPLAY_V0: D_RESULTS;/*D_MOD_SUM;*/
 	
-					 D_MOD_SUM: next_state = (counter == 6'd32/*counter == 5'd32*/) ? D_DISPLAY_V0: D_RESULTS;
+					 // D_MOD_SUM: next_state = (counter == 5'd32) ? D_DISPLAY_V0: D_RESULTS;
 					 
 					 D_DISPLAY_V0: next_state = D_DISPLAY_V1;
 					 
@@ -308,7 +304,7 @@ module control (
 		  displayV1 = 1'b0;
 		  resetFlag = 1'b0;
 		  setSum = 1'b0;
-		  modSum = 1'b0;
+		  //modSum = 1'b0;
 		   
 
         case (current_state)
@@ -367,9 +363,10 @@ module control (
 				    ld_sum_dec = 1'b1;					 
 					 end
 					 
-				D_MOD_SUM: begin
+				/*D_MOD_SUM: begin
 					 modSum = 1'b1;
-					 end
+				
+					 end*/
 					 
 				D_RESULTS: begin
 					 ld_results = 1'b1;
