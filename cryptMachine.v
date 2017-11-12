@@ -44,11 +44,13 @@ output [9:0] LEDR
 	hex_decoder H0(finalResult[3:0],HEX0); 
 	hex_decoder H1(finalResult[7:4],HEX1);
 	hex_decoder H2(finalResult[11:8],HEX2);
-	hex_decoder H3(finalResult[15:12],HEX3);
-	hex_decoder H4(finalResult[19:16],HEX4);
-	hex_decoder H5(finalResult[23:20],HEX5);
+	hex_decoder H3(finalResult[19:16],HEX3);
+	hex_decoder H4(finalResult[23:20],HEX4);
+	hex_decoder H5(finalResult[27:24],HEX5);
 	
-	assign LEDR = finalResult [31:24];
+	//assign LEDR = finalResult [31:24];
+	assign LEDR[3:0] = finalResult[15:12];
+	assign LEDR[7:4] = finalResult[31:28];
 	
 	
 endmodule
@@ -153,9 +155,9 @@ localparam delta = 32'h9e3779b9,
 				
 				if (ld_k3) k3 <= data_in[9:0];
 				
-				if (displayV0) finalResult <= v0;
+				if (displayV0) finalResult[15:0] <= v0[15:0];
 			
-				if (displayV1) finalResult <= v1;
+				if (displayV1) finalResult[31:16] <= v1[15:0];
 						
 			end
     end
