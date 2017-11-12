@@ -353,6 +353,8 @@ module control (
 					 
 			   WAIT_FOR_DECRYPT: begin
 					 setSum = 1'b1;
+					 displayV0 = 1'b1;
+					 displayV1 = 1'b1;
 					 end
 					 
 			   D_SUM: begin
