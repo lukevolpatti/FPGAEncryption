@@ -1,7 +1,7 @@
 `timescale 1ns / 1ns // `timescale time_unit/time_precision
 module cryptMachine (
 input [9:0] SW,
-input [1:0] KEY,
+input [2:0] KEY,
 input CLOCK_50,
 output [6:0] HEX0,
 HEX1, HEX2, HEX3, HEX4, HEX5,
@@ -33,6 +33,7 @@ output [9:0] LEDR
 		 .clk(CLOCK_50),
        .resetn(KEY[0]),
        .go(~KEY[1]),
+		 .decrypt(~KEY[2]),
 		 .ld_v0(ld_v0), .ld_v1(ld_v1), .ld_k0(ld_k0), .ld_k1(ld_k1), 
 		 .ld_k2(ld_k2), .ld_k3(ld_k3), .displayV0(displayV0), .displayV1(displayV1),
 		 .ld_enc_sum(ld_enc_sum), .ld_enc_results_1(ld_enc_results_1),
@@ -51,7 +52,6 @@ output [9:0] LEDR
 	hex_decoder H4(finalResult[23:20],HEX4);
 	hex_decoder H5(finalResult[27:24],HEX5);
 	
-	//assign LEDR = finalResult [31:24];
 	assign LEDR[3:0] = finalResult[15:12];
 	assign LEDR[7:4] = finalResult[31:28];
 	
@@ -86,6 +86,10 @@ localparam delta = 32'h9e3779b9;
         if(!resetn) begin
             v0 <= 32'd0;
 				v1 <= 32'd0;
+				k0 <= 32'd0;
+				k1 <= 32'd0;
+				k2 <= 32'd0;
+				k3 <= 32'd0;
             sum <= 32'd0; 
             result1 <= 32'd0; 
             result2 <= 32'd0;
@@ -93,6 +97,9 @@ localparam delta = 32'h9e3779b9;
 				result4 <= 32'd0;
 				result5 <= 32'd0;
 				result6 <= 32'd0;
+				finalResult <= 32'd0; 
+				// try the last one, so that HEX
+				// is cleared as well
         end
 		  
         else begin
@@ -100,6 +107,10 @@ localparam delta = 32'h9e3779b9;
 				if (resetFlag) begin
 					v0 <= 32'd0;
 					v1 <= 32'd0;
+					k0 <= 32'd0;
+					k1 <= 32'd0;
+					k2 <= 32'd0;
+					k3 <= 32'd0;
 					sum <= 32'd0; 
 					result1 <= 32'd0; 
 					result2 <= 32'd0;
@@ -107,6 +118,9 @@ localparam delta = 32'h9e3779b9;
 					result4 <= 32'd0;
 					result5 <= 32'd0;
 					result6 <= 32'd0;
+					finalResult <= 32'd0; 
+					// try the last one, so that HEX
+					// is cleared as well
 				end
 							
 				if (ld_v0) v0 <= data_in[9:0];
@@ -183,6 +197,7 @@ module control (
 	 input clk,
     input resetn,
     input go,
+	 input decrypt,
 	 output reg ld_v0, ld_v1, ld_k0, ld_k1, 
 	 ld_k2, ld_k3, displayV0, displayV1,
 	 ld_enc_sum, ld_enc_results_1,
@@ -283,7 +298,7 @@ module control (
 					 
 					 E_DISPLAY_V1: next_state = WAIT_FOR_DECRYPT;
 					 
-					 WAIT_FOR_DECRYPT: next_state = go ? D_RESULTS_1: WAIT_FOR_DECRYPT;
+					 WAIT_FOR_DECRYPT: next_state = /*go*/decrypt ? D_RESULTS_1: WAIT_FOR_DECRYPT;
 					 
 					 D_RESULTS_1: next_state = D_V1;
 					 
@@ -426,7 +441,7 @@ module control (
 					resetFlag = 1'b1;
 					end
            
-        // default:    // don't need default since we already made sure all of our outputs were assigned a value at the start of the always block
+        // default: don't need default since we already made sure all of our outputs were assigned a value at the start of the always block
         endcase
     end // enable_signals
    
@@ -434,7 +449,7 @@ module control (
     always@(posedge clk)
     begin: state_FFs
         if(!resetn)
-            current_state <= LOAD_V0;
+            current_state <= FINAL;/*LOAD_V0;*/
         else begin
             current_state <= next_state;
 				
@@ -443,7 +458,7 @@ module control (
 				  counter <= counter + 6'd1;
 			   end
 				
-				if (current_state == D_RESULTS_1/*D_SUM*/)
+				if (current_state == D_RESULTS_1)
 		      begin
 				  counter <= counter + 6'd1;
 			   end
