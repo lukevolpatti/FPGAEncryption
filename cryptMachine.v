@@ -3,16 +3,29 @@ module cryptMachine (
 input [9:0] SW,
 input [2:0] KEY,
 input CLOCK_50,
+// inout PS2_CLK, PS2_DAT, 
 output [6:0] HEX0,
 HEX1, HEX2, HEX3, HEX4, HEX5,
 output [9:0] LEDR
 );
 
 	wire [31:0] finalResult;
+	// wire [7:0] received_data;
+	// wire received_data_en;
 	wire ld_v0, ld_v1, ld_k0, ld_k1, ld_k2, ld_k3, displayV0, displayV1,
 	ld_enc_sum, ld_enc_results_1, ld_enc_results_2, ld_enc_v0, ld_enc_v1,
 	ld_dec_sum, ld_dec_results_1, ld_dec_results_2, ld_dec_v0, ld_dec_v1,
 	setSum, resetFlag;
+	
+	/* keyboard k0 (
+		.clk(CLOCK_50), 
+		.resetn(~KEY[0]),
+		.PS2_CLK(PS2_CLK),
+		.PS2_DAT(PS2_DAT),
+		.received_data(received_data),
+		.received_data_en(received_data_en)
+	); */
+	
 	
 	datapath d0 (
 		.clk(CLOCK_50), 
@@ -118,7 +131,7 @@ localparam delta = 32'h9e3779b9;
 					result4 <= 32'd0;
 					result5 <= 32'd0;
 					result6 <= 32'd0;
-					finalResult <= 32'd0; 
+					//finalResult <= 32'd0; 
 					// try the last one, so that HEX
 					// is cleared as well
 				end
