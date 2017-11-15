@@ -2,10 +2,10 @@ Simulation:
 Running clock with period 20ns
 Takes 2200ns to encrypt data --> 110 clock cycles
 At fmax, total time to encrypt data: 487ns // HAVE TO RECALCULATE
-Total time to decrypt: 974
+Total time to decrypt: 974ns
 
 Logic utilization:
-282/32070 ALMS (<1%)
+288/32070 ALMS (<1%)
 
 Total Registers:
 387
