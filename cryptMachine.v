@@ -3,58 +3,63 @@ module cryptMachine (
 input [9:0] SW,
 input [2:0] KEY,
 input CLOCK_50,
-// inout PS2_CLK, PS2_DAT, 
+inout PS2_CLK, PS2_DAT, 
 output [6:0] HEX0,
 HEX1, HEX2, HEX3, HEX4, HEX5,
 output [9:0] LEDR
 );
 
 	wire [31:0] finalResult;
-	// wire [7:0] received_data;
-	// wire received_data_en;
-	wire ld_v0, ld_v1, ld_k0, ld_k1, ld_k2, ld_k3, displayV0, displayV1,
+	wire [7:0] received_data;
+	wire received_data_en;
+	wire load, displayV0, displayV1,
 	ld_enc_sum, ld_enc_results_1, ld_enc_results_2, ld_enc_v0, ld_enc_v1,
 	ld_dec_sum, ld_dec_results_1, ld_dec_results_2, ld_dec_v0, ld_dec_v1,
 	setSum, resetFlag;
-	
-	/* keyboard k0 (
-		.clk(CLOCK_50), 
-		.resetn(~KEY[0]),
-		.PS2_CLK(PS2_CLK),
-		.PS2_DAT(PS2_DAT),
+	wire [3:0] ld_counter;
+
+	PS2_Controller k0 (
+		.CLOCK_50(CLOCK_50),
+		.reset(~KEY[0]),
+		.PS2_CLK(PS2_CLK),					
+		.PS2_DAT(PS2_DAT),					
 		.received_data(received_data),
-		.received_data_en(received_data_en)
-	); */
-	
+		.received_data_en(received_data_en) // If 1 - new data (NOTE: DOES NOT MEAN DIFFERENT DATA) has been received
+	);
 	
 	datapath d0 (
-		.clk(CLOCK_50), 
-		.resetn(KEY[0]),		
-		.data_in(SW[9:0]),
-		.ld_v0(ld_v0), .ld_v1(ld_v1), .ld_k0(ld_k0), .ld_k1(ld_k1), 
-		.ld_k2(ld_k2), .ld_k3(ld_k3), .displayV0(displayV0), .displayV1(displayV1),
+		.clk(CLOCK_50), 		
+      .load(load), .displayV0(displayV0), .displayV1(displayV1),
+		
 		.ld_enc_sum(ld_enc_sum), .ld_enc_results_1(ld_enc_results_1),
 		.ld_enc_results_2(ld_enc_results_2), .ld_enc_v0(ld_enc_v0), .ld_enc_v1(ld_enc_v1),
+		
 		.ld_dec_sum(ld_dec_sum), .ld_dec_results_1(ld_dec_results_1),
 		.ld_dec_results_2(ld_dec_results_2), .ld_dec_v0(ld_dec_v0), .ld_dec_v1(ld_dec_v1),
+		
 		.finalResult(finalResult),
 		.resetFlag(resetFlag),
-		.setSum(setSum)
+		.received_data(received_data),
+		.setSum(setSum),
+		.ld_counter(ld_counter)
 	);
 	
 	control c0 (
 		 .clk(CLOCK_50),
-       .resetn(KEY[0]),
-       .go(~KEY[1]),
-		 .decrypt(~KEY[2]),
-		 .ld_v0(ld_v0), .ld_v1(ld_v1), .ld_k0(ld_k0), .ld_k1(ld_k1), 
-		 .ld_k2(ld_k2), .ld_k3(ld_k3), .displayV0(displayV0), .displayV1(displayV1),
+       .load(load), .displayV0(displayV0), .displayV1(displayV1),
+		 
 		 .ld_enc_sum(ld_enc_sum), .ld_enc_results_1(ld_enc_results_1),
 		 .ld_enc_results_2(ld_enc_results_2), .ld_enc_v0(ld_enc_v0), .ld_enc_v1(ld_enc_v1),
+		 
 		 .ld_dec_sum(ld_dec_sum), .ld_dec_results_1(ld_dec_results_1),
 		 .ld_dec_results_2(ld_dec_results_2), .ld_dec_v0(ld_dec_v0), .ld_dec_v1(ld_dec_v1),
+		 
 		 .resetFlag(resetFlag),
-		 .setSum(setSum)
+		 .setSum(setSum),
+		 
+	    .received_data(received_data),
+		 .ld_counter(ld_counter),
+		 .received_data_en(received_data_en)
 	);
 	
 	hex_decoder H0(finalResult[3:0],HEX0); 
@@ -65,9 +70,10 @@ output [9:0] LEDR
 	hex_decoder H4(finalResult[23:20],HEX4);
 	hex_decoder H5(finalResult[27:24],HEX5);
 	
-	assign LEDR[3:0] = finalResult[15:12];
-	assign LEDR[7:4] = finalResult[31:28];
+	// assign LEDR[3:0] = finalResult[15:12];
+	// assign LEDR[7:4] = finalResult[31:28];
 	
+	assign LEDR = ld_counter;
 	
 endmodule
 
@@ -80,8 +86,10 @@ module datapath (
 		 ld_enc_sum, ld_enc_results_1,
 		 ld_enc_results_2, ld_enc_v0, ld_enc_v1,
 		 ld_dec_sum, ld_dec_results_1,
-		 ld_dec_results_2, ld_dec_v0, ld_dec_v1,
-		 resetFlag, setSum,
+		 ld_dec_results_2, ld_dec_v0, ld_dec_v1, load,
+		 input [3:0] ld_counter,
+		 resetFlag, setSum, go,
+		 input [7:0] received_data,
 		 output reg [31:0] finalResult
 );
 
@@ -96,7 +104,7 @@ localparam delta = 32'h9e3779b9;
     // Registers 
     always@(posedge clk) begin
 	 
-        if(!resetn) begin
+        if(received_data == 8'h76) begin
             v0 <= 32'd0;
 				v1 <= 32'd0;
 				k0 <= 32'd0;
@@ -111,8 +119,6 @@ localparam delta = 32'h9e3779b9;
 				result5 <= 32'd0;
 				result6 <= 32'd0;
 				finalResult <= 32'd0; 
-				// try the last one, so that HEX
-				// is cleared as well
         end
 		  
         else begin
@@ -131,22 +137,286 @@ localparam delta = 32'h9e3779b9;
 					result4 <= 32'd0;
 					result5 <= 32'd0;
 					result6 <= 32'd0;
-					//finalResult <= 32'd0; 
-					// try the last one, so that HEX
-					// is cleared as well
 				end
-							
-				if (ld_v0) v0 <= data_in[9:0];
 				
-				if (ld_v1) v1 <= data_in[9:0];
+				if (load) begin
+
+				    if (ld_counter == 4'd0) begin
+					// loading V0
 					
-				if (ld_k0) k0 <= data_in[9:0];
-				
-				if (ld_k1) k1 <= data_in[9:0];
-				
-				if (ld_k2) k2 <= data_in[9:0];
-				
-				if (ld_k3) k3 <= data_in[9:0];
+					if (received_data == 8'h45) begin
+					// 0
+						v0 <= 32'd0;
+					end
+					else if (received_data == 8'h16) begin
+					// 1
+						v0 <= 32'd1;
+					end
+					else if (received_data == 8'h1E) begin
+					// 2
+						v0 <= 32'd2;
+					end
+					else if (received_data == 8'h26) begin
+					// 3
+						v0 <= 32'd3;
+					end
+					else if (received_data == 8'h25) begin
+					// 4
+						v0 <= 32'd4;
+					end
+					else if (received_data == 8'h2E) begin
+					// 5
+						v0 <= 32'd5;
+					end
+					else if (received_data == 8'h36) begin
+					// 6
+						v0 <= 32'd6;
+					end
+					else if (received_data == 8'h3D) begin
+					// 7
+						v0 <= 32'd7;
+					end
+					else if (received_data == 8'h3E) begin
+					// 8
+						v0 <= 32'd8;
+					end
+					else if (received_data == 8'h46) begin
+					// 9
+						v0 <= 32'd9;
+					end
+ 
+     				    end
+
+				    else if (ld_counter == 4'd1) begin
+					// loading V1
+					
+					if (received_data == 8'h45) begin
+					// 0
+						v1 <= 32'd0;
+					end
+					else if (received_data == 8'h16) begin
+					// 1
+						v1 <= 32'd1;
+					end
+					else if (received_data == 8'h1E) begin
+					// 2
+						v1 <= 32'd2;
+					end
+					else if (received_data == 8'h26) begin
+					// 3
+						v1 <= 32'd3;
+					end
+					else if (received_data == 8'h25) begin
+					// 4
+						v1 <= 32'd4;
+					end
+					else if (received_data == 8'h2E) begin
+					// 5
+						v1 <= 32'd5;
+					end
+					else if (received_data == 8'h36) begin
+					// 6
+						v1 <= 32'd6;
+					end
+					else if (received_data == 8'h3D) begin
+					// 7
+						v1 <= 32'd7;
+					end
+					else if (received_data == 8'h3E) begin
+					// 8
+						v1 <= 32'd8;
+					end
+					else if (received_data == 8'h46) begin
+					// 9
+						v1 <= 32'd9;
+					end
+     				    end
+				    
+				    else if (ld_counter == 4'd2) begin
+					// loading K0
+
+					if (received_data == 8'h45) begin
+					// 0
+						k0 <= 32'd0;
+					end
+					else if (received_data == 8'h16) begin
+					// 1
+						k0 <= 32'd1;
+					end
+					else if (received_data == 8'h1E) begin
+					// 2
+						k0 <= 32'd2;
+					end
+					else if (received_data == 8'h26) begin
+					// 3
+						k0 <= 32'd3;
+					end
+					else if (received_data == 8'h25) begin
+					// 4
+						k0 <= 32'd4;
+					end
+					else if (received_data == 8'h2E) begin
+					// 5
+						k0 <= 32'd5;
+					end
+					else if (received_data == 8'h36) begin
+					// 6
+						k0 <= 32'd6;
+					end
+					else if (received_data == 8'h3D) begin
+					// 7
+						k0 <= 32'd7;
+					end
+					else if (received_data == 8'h3E) begin
+					// 8
+						k0 <= 32'd8;
+					end
+					else if (received_data == 8'h46) begin
+					// 9
+						k0 <= 32'd9;
+					end
+     				    end
+
+				    else if (ld_counter == 4'd3) begin
+					// loading K1
+
+
+					if (received_data == 8'h45) begin
+					// 0
+						k1 <= 32'd0;
+					end
+					else if (received_data == 8'h16) begin
+					// 1
+						k1 <= 32'd1;
+					end
+					else if (received_data == 8'h1E) begin
+					// 2
+						k1 <= 32'd2;
+					end
+					else if (received_data == 8'h26) begin
+					// 3
+						k1 <= 32'd3;
+					end
+					else if (received_data == 8'h25) begin
+					// 4
+						k1 <= 32'd4;
+					end
+					else if (received_data == 8'h2E) begin
+					// 5
+						k1 <= 32'd5;
+					end
+					else if (received_data == 8'h36) begin
+					// 6
+						k1 <= 32'd6;
+					end
+					else if (received_data == 8'h3D) begin
+					// 7
+						k1 <= 32'd7;
+					end
+					else if (received_data == 8'h3E) begin
+					// 8
+						k1 <= 32'd8;
+					end
+					else if (received_data == 8'h46) begin
+					// 9
+						k1 <= 32'd9;
+					end
+     				    end
+
+				    else if (ld_counter == 4'd4) begin
+					// loading K2
+
+
+					if (received_data == 8'h45) begin
+					// 0
+						k2 <= 32'd0;
+					end
+					else if (received_data == 8'h16) begin
+					// 1
+						k2 <= 32'd1;
+					end
+					else if (received_data == 8'h1E) begin
+					// 2
+						k2 <= 32'd2;
+					end
+					else if (received_data == 8'h26) begin
+					// 3
+						k2 <= 32'd3;
+					end
+					else if (received_data == 8'h25) begin
+					// 4
+						k2 <= 32'd4;
+					end
+					else if (received_data == 8'h2E) begin
+					// 5
+						k2 <= 32'd5;
+					end
+					else if (received_data == 8'h36) begin
+					// 6
+						k2 <= 32'd6;
+					end
+					else if (received_data == 8'h3D) begin
+					// 7
+						k2 <= 32'd7;
+					end
+					else if (received_data == 8'h3E) begin
+					// 8
+						k2 <= 32'd8;
+					end
+					else if (received_data == 8'h46) begin
+					// 9
+						k2 <= 32'd9;
+					end
+     				    end
+
+				    else if (ld_counter == 4'd5) begin
+					// loading K3
+
+
+					if (received_data == 8'h45) begin
+					// 0
+						k3 <= 32'd0;
+					end
+					else if (received_data == 8'h16) begin
+					// 1
+						k3 <= 32'd1;
+					end
+					else if (received_data == 8'h1E) begin
+					// 2
+						k3 <= 32'd2;
+					end
+					else if (received_data == 8'h26) begin
+					// 3
+						k3 <= 32'd3;
+					end
+					else if (received_data == 8'h25) begin
+					// 4
+						k3 <= 32'd4;
+					end
+					else if (received_data == 8'h2E) begin
+					// 5
+						k3 <= 32'd5;
+					end
+					else if (received_data == 8'h36) begin
+					// 6
+						k3 <= 32'd6;
+					end
+					else if (received_data == 8'h3D) begin
+					// 7
+						k3 <= 32'd7;
+					end
+					else if (received_data == 8'h3E) begin
+					// 8
+						k3 <= 32'd8;
+					end
+					else if (received_data == 8'h46) begin
+					// 9
+						k3 <= 32'd9;
+					end
+
+     				    end
+
+				end
 				
 				if (displayV0) finalResult[15:0] <= v0[15:0];
 			
@@ -205,97 +475,57 @@ localparam delta = 32'h9e3779b9;
 
 endmodule
 
-
 module control (
 	 input clk,
     input resetn,
-    input go,
-	 input decrypt,
-	 output reg ld_v0, ld_v1, ld_k0, ld_k1, 
-	 ld_k2, ld_k3, displayV0, displayV1,
+	 input [7:0] received_data,
+	 input received_data_en,
+	 output reg  load, displayV0, displayV1,
 	 ld_enc_sum, ld_enc_results_1,
 	 ld_enc_results_2, ld_enc_v0, ld_enc_v1,
 	 ld_dec_sum, ld_dec_results_1,
 	 ld_dec_results_2, ld_dec_v0, ld_dec_v1,
-	 resetFlag, setSum
+	 resetFlag, setSum,
+	 output reg [3:0] ld_counter
 );
 
     reg [5:0] current_state, next_state; 
      reg [5:0] counter = 6'd0;
+	  	reg ldcountFlag = 1'b0;
+		reg spcpressed = 1'b0;
+
 	  
-    localparam  LOAD_V0           = 5'd0,
-                LOAD_V0_WAIT      = 5'd1,
-                LOAD_V1           = 5'd2,
-                LOAD_V1_WAIT      = 5'd3,
-                LOAD_K0           = 5'd4,
-                LOAD_K0_WAIT      = 5'd5,
-                LOAD_K1           = 5'd6,
-                LOAD_K1_WAIT      = 5'd7,
-                LOAD_K2           = 5'd8,
-                LOAD_K2_WAIT      = 5'd9,
-                LOAD_K3           = 5'd10,
-					 LOAD_K3_WAIT      = 5'd11,
-		          WAIT_FOR_ENCRYPT  = 5'd12,
-					 E_SUM             = 5'd13,
-					 E_RESULTS_1       = 5'd14,
-					 E_V0              = 5'd15,
-					 E_RESULTS_2       = 5'd16,
-					 E_V1              = 5'd17,
-					 E_DISPLAY_V0      = 5'd18,
-					 E_DISPLAY_V1      = 5'd19,
-					 WAIT_FOR_DECRYPT  = 5'd20,
-					 D_RESULTS_1       = 5'd21,
-					 D_V1              = 5'd22,
-					 D_RESULTS_2       = 5'd23,
-					 D_V0              = 5'd24,
-					 D_SUM             = 5'd25,
-					 D_DISPLAY_V0      = 5'd26,
-					 D_DISPLAY_V1      = 5'd27,
-					 FINAL             = 5'd28;
+    localparam  LOAD              = 5'd0,
+					 LOAD_WAIT         = 5'd1,
+		          WAIT_FOR_ENCRYPT  = 5'd2,
+					 E_SUM             = 5'd3,
+					 E_RESULTS_1       = 5'd4,
+					 E_V0              = 5'd5,
+					 E_RESULTS_2       = 5'd6,
+					 E_V1              = 5'd7,
+					 E_DISPLAY_V0      = 5'd8,
+					 E_DISPLAY_V1      = 5'd9,
+					 WAIT_FOR_DECRYPT  = 5'd10,
+					 D_RESULTS_1       = 5'd11,
+					 D_V1              = 5'd12,
+					 D_RESULTS_2       = 5'd13,
+					 D_V0              = 5'd14,
+					 D_SUM             = 5'd15,
+					 D_DISPLAY_V0      = 5'd16,
+					 D_DISPLAY_V1      = 5'd17,
+					 FINAL             = 5'd18;
     
 	
 	    // Next state logic aka our state table
     always@(*)
     begin: state_table 
             case (current_state)
-				
-                LOAD_V0: next_state = go ? LOAD_V0_WAIT : LOAD_V0; 
-					 // Loop in current state until value is input
-					 
-                LOAD_V0_WAIT: next_state = go ? LOAD_V0_WAIT : LOAD_V1; 
-					 // Loop in current state until go signal goes low
-                
-					 LOAD_V1: next_state = go ? LOAD_V1_WAIT : LOAD_V1; 
-					 // Loop in current state until value is input
-					 
-                LOAD_V1_WAIT: next_state = go ? LOAD_V1_WAIT : LOAD_K0; 
-					 // Loop in current state until go signal goes low
-                
-					 LOAD_K0: next_state = go ? LOAD_K0_WAIT : LOAD_K0; 
-					 // Loop in current state until value is input
-					 
-                LOAD_K0_WAIT: next_state = go ? LOAD_K0_WAIT : LOAD_K1; 
-					 // Loop in current state until go signal goes low
-                
-					 LOAD_K1: next_state = go ? LOAD_K1_WAIT : LOAD_K1; 
-					 // Loop in current state until value is input
-					 
-                LOAD_K1_WAIT: next_state = go ? LOAD_K1_WAIT : LOAD_K2; 
-					 // Loop in current state until go signal goes low
-                
-					 LOAD_K2: next_state = go ? LOAD_K2_WAIT : LOAD_K2; 
-					 // Loop in current state until value is input
-					 
-                LOAD_K2_WAIT: next_state = go ? LOAD_K2_WAIT : LOAD_K3; 
-					 // Loop in current state until go signal goes low
-					 
-					 LOAD_K3: next_state = go ? LOAD_K3_WAIT : LOAD_K3; 
-					 // Loop in current state until value is input
-					 
-                LOAD_K3_WAIT: next_state = go ? LOAD_K3_WAIT : WAIT_FOR_ENCRYPT; 
-					 // Loop in current state until go signal goes low
-					 
-					 WAIT_FOR_ENCRYPT: next_state  = go ? E_SUM: WAIT_FOR_ENCRYPT;
+								 
+					 LOAD: next_state = (received_data == 8'h5A) ? LOAD_WAIT : LOAD;
+						
+					 LOAD_WAIT: next_state = (received_data == 8'h5A) ? LOAD_WAIT : WAIT_FOR_ENCRYPT;
+
+					 WAIT_FOR_ENCRYPT: next_state  = (received_data == 8'h24) ? E_SUM: WAIT_FOR_ENCRYPT;
 					 
 					 E_SUM: next_state = E_RESULTS_1;
 					 
@@ -311,7 +541,7 @@ module control (
 					 
 					 E_DISPLAY_V1: next_state = WAIT_FOR_DECRYPT;
 					 
-					 WAIT_FOR_DECRYPT: next_state = /*go*/decrypt ? D_RESULTS_1: WAIT_FOR_DECRYPT;
+					 WAIT_FOR_DECRYPT: next_state = (received_data == 8'h23) ? D_RESULTS_1: WAIT_FOR_DECRYPT;
 					 
 					 D_RESULTS_1: next_state = D_V1;
 					 
@@ -327,9 +557,9 @@ module control (
 					 
 					 D_DISPLAY_V1: next_state = FINAL;
 					 
-					 FINAL: next_state = LOAD_V0;
+					 FINAL: next_state = LOAD;
 
-            default: next_state = LOAD_V0;
+            default: next_state = LOAD;
         endcase
     end // state_table
    
@@ -338,12 +568,8 @@ module control (
     always @(*)
     begin: enable_signals
         // By default make all our signals 0
-        ld_v0 = 1'b0;
-        ld_v1 = 1'b0;
-        ld_k0 = 1'b0;
-        ld_k1 = 1'b0;
-        ld_k2 = 1'b0;
-		  ld_k3 = 1'b0;
+
+		  load = 1'b0;
 		  displayV0 = 1'b0;
 		  displayV1 = 1'b0;
 		  
@@ -363,31 +589,11 @@ module control (
 		  setSum = 1'b0;
 
         case (current_state)
-		  
-            LOAD_V0: begin
-                ld_v0 = 1'b1;
-                end
-					 
-            LOAD_V1: begin
-                ld_v1 = 1'b1;
-                end
-					 
-            LOAD_K0: begin
-                ld_k0 = 1'b1;
-                end
-					 
-				LOAD_K1: begin
-                ld_k1 = 1'b1;
-                end 
-					 
-				LOAD_K2: begin
-                ld_k2 = 1'b1;
-                end
-					 
-			   LOAD_K3: begin
-                ld_k3 = 1'b1;
-                end
-					 
+		
+				LOAD: begin
+					 load = 1'b1;
+					 end
+	 
 				E_SUM: begin
 				    ld_enc_sum = 1'b1;					 
 					 end
@@ -458,14 +664,30 @@ module control (
         endcase
     end // enable_signals
    
+	
     // current_state registers
     always@(posedge clk)
     begin: state_FFs
-        if(!resetn)
-            current_state <= FINAL;/*LOAD_V0;*/
+        if(received_data == 8'h76)
+            current_state <= FINAL;
         else begin
             current_state <= next_state;
 				
+				if (current_state == LOAD)
+		      begin
+				 if (received_data_en && received_data == 8'h29 && ldcountFlag == 1'b0 && spcpressed == 1'b0) begin
+					ld_counter <= ld_counter + 4'd1;
+					ldcountFlag <= 1'b1;
+					spcpressed = 1'b1;
+					end
+				 else if (received_data_en && received_data == 8'h29 && ldcountFlag == 1'b1) ldcountFlag <= 1'b0; 
+				 // for the break code ending with space comes again, you reset ldcountflag
+				 
+				 else if (received_data_en && received_data != 8'h29 && received_data != 8'hF0) spcpressed <= 1'b0; 
+				 // for when some other code other than break code and space code comes, you reset spcpressed
+				 
+			   end
+
 				if (current_state == E_SUM)
 		      begin
 				  counter <= counter + 6'd1;
@@ -484,6 +706,11 @@ module control (
 				if (current_state == WAIT_FOR_DECRYPT)
 		      begin
 				  counter <= 6'd0;
+			   end
+				
+				if (current_state == FINAL)
+		      begin
+				  ld_counter <= 4'd0;
 			   end
 		  end
     end // state_FFS
@@ -517,3 +744,4 @@ module hex_decoder(hex_digit, segments);
             default: segments = 7'h7f;
         endcase
 endmodule
+
