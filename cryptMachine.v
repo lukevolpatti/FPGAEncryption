@@ -1,35 +1,63 @@
 `timescale 1ns / 1ns // `timescale time_unit/time_precision
 module cryptMachine (
-input [9:0] SW,
-input [2:0] KEY,
+input [1:0] KEY,
 input CLOCK_50,
 inout PS2_CLK, PS2_DAT, 
 output [6:0] HEX0,
 HEX1, HEX2, HEX3, HEX4, HEX5,
-output [9:0] LEDR
+output [7:0] LEDR,
+// The ports below are for the VGA output.  Do not change.
+output VGA_CLK,   					//	VGA Clock
+		 VGA_HS,							//	VGA H_SYNC
+		 VGA_VS,							//	VGA V_SYNC
+		 VGA_BLANK_N,					//	VGA BLANK
+		 VGA_SYNC_N,					//	VGA SYNC
+output [9:0]
+		 VGA_R,   						//	VGA Red[9:0]
+		 VGA_G,	 						//	VGA Green[9:0]
+		 VGA_B   						//	VGA Blue[9:0]
 );
 
 	wire [31:0] finalResult;
 	wire [7:0] received_data;
+	wire [3:0] ld_counter;
 	wire received_data_en;
 	wire load, displayV0, displayV1,
 	ld_enc_sum, ld_enc_results_1, ld_enc_results_2, ld_enc_v0, ld_enc_v1,
 	ld_dec_sum, ld_dec_results_1, ld_dec_results_2, ld_dec_v0, ld_dec_v1,
-	setSum, resetFlag;
-	wire [3:0] ld_counter;
-
+	setSum, resetFlag, drawV0, donedraw;
+	wire writeEn;
+	wire [2:0] romColourOutput;
+   wire [12:0] addressCounter;
+	wire [5:0] xcounter;
+	wire [5:0] ycounter;
+	wire [7:0] startX;
+	wire [6:0] startY;
+	
 	PS2_Controller k0 (
 		.CLOCK_50(CLOCK_50),
 		.reset(~KEY[0]),
 		.PS2_CLK(PS2_CLK),					
 		.PS2_DAT(PS2_DAT),					
 		.received_data(received_data),
-		.received_data_en(received_data_en) // If 1 - new data (NOTE: DOES NOT MEAN DIFFERENT DATA) has been received
+		.received_data_en(received_data_en) 
+		// If 1: new data (NOTE: DOES NOT MEAN DIFFERENT DATA) has been received
+	);
+
+	
+	numbers n0 (
+	 .address(addressCounter),
+	 .clock(CLOCK_50),
+	 .q(romColourOutput)
 	);
 	
+
 	datapath d0 (
-		.clk(CLOCK_50), 		
-      .load(load), .displayV0(displayV0), .displayV1(displayV1),
+		.clk(CLOCK_50), 	
+		
+      .resetFlag(resetFlag), .load(load), .drawV0(drawV0),
+		.displayV0(displayV0), .displayV1(displayV1),
+		.setSum(setSum),
 		
 		.ld_enc_sum(ld_enc_sum), .ld_enc_results_1(ld_enc_results_1),
 		.ld_enc_results_2(ld_enc_results_2), .ld_enc_v0(ld_enc_v0), .ld_enc_v1(ld_enc_v1),
@@ -37,16 +65,24 @@ output [9:0] LEDR
 		.ld_dec_sum(ld_dec_sum), .ld_dec_results_1(ld_dec_results_1),
 		.ld_dec_results_2(ld_dec_results_2), .ld_dec_v0(ld_dec_v0), .ld_dec_v1(ld_dec_v1),
 		
-		.finalResult(finalResult),
-		.resetFlag(resetFlag),
+		.ld_counter(ld_counter),
 		.received_data(received_data),
-		.setSum(setSum),
-		.ld_counter(ld_counter)
+		
+		.finalResult(finalResult),
+		.xcounter(xcounter),
+      .ycounter(ycounter),
+		.startX(startX),
+		.startY(startY),		
+		.addressCounter(addressCounter),
+		.donedraw(donedraw)
 	);
 	
 	control c0 (
 		 .clk(CLOCK_50),
-       .load(load), .displayV0(displayV0), .displayV1(displayV1),
+		 
+       .resetFlag(resetFlag), .load(load), .drawV0(drawV0),
+		 .displayV0(displayV0), .displayV1(displayV1),
+		 .setSum(setSum),
 		 
 		 .ld_enc_sum(ld_enc_sum), .ld_enc_results_1(ld_enc_results_1),
 		 .ld_enc_results_2(ld_enc_results_2), .ld_enc_v0(ld_enc_v0), .ld_enc_v1(ld_enc_v1),
@@ -54,13 +90,38 @@ output [9:0] LEDR
 		 .ld_dec_sum(ld_dec_sum), .ld_dec_results_1(ld_dec_results_1),
 		 .ld_dec_results_2(ld_dec_results_2), .ld_dec_v0(ld_dec_v0), .ld_dec_v1(ld_dec_v1),
 		 
-		 .resetFlag(resetFlag),
-		 .setSum(setSum),
-		 
-	    .received_data(received_data),
 		 .ld_counter(ld_counter),
-		 .received_data_en(received_data_en)
+		 .received_data(received_data),
+		 .received_data_en(received_data_en),
+		 .plotOutput(writeEn),
+		 .donedraw(donedraw) 
 	);
+	
+	// Create an Instance of a VGA controller - there can be only one!
+	// Define the number of colours as well as the initial background
+	// image file (.MIF) for the controller.
+	vga_adapter VGA(
+			.resetn(KEY[0]),
+			.clock(CLOCK_50),
+			.colour(romColourOutput),
+			.x(startX + xcounter),
+			.y(startY + ycounter),
+			.plot(writeEn),
+			/* Signals for the DAC to drive the monitor. */
+			.VGA_R(VGA_R),
+			.VGA_G(VGA_G),
+			.VGA_B(VGA_B),
+			.VGA_HS(VGA_HS),
+			.VGA_VS(VGA_VS),
+			.VGA_BLANK(VGA_BLANK_N),
+			.VGA_SYNC(VGA_SYNC_N),
+			.VGA_CLK(VGA_CLK)
+			);
+			
+		defparam VGA.RESOLUTION = "160x120";
+		defparam VGA.MONOCHROME = "FALSE";
+		defparam VGA.BITS_PER_COLOUR_CHANNEL = 1;
+		defparam VGA.BACKGROUND_IMAGE = "black.mif";
 	
 	hex_decoder H0(finalResult[3:0],HEX0); 
 	hex_decoder H1(finalResult[7:4],HEX1);
@@ -70,27 +131,31 @@ output [9:0] LEDR
 	hex_decoder H4(finalResult[23:20],HEX4);
 	hex_decoder H5(finalResult[27:24],HEX5);
 	
-	// assign LEDR[3:0] = finalResult[15:12];
-	// assign LEDR[7:4] = finalResult[31:28];
+	assign LEDR[3:0] = finalResult[15:12];
+	assign LEDR[7:4] = finalResult[31:28];
 	
-	assign LEDR = ld_counter;
+	// assign LEDR = ld_counter;
 	
 endmodule
 
 
 module datapath (
-		 input clk, resetn,		
-		 input [9:0] data_in,
-		 input ld_v0, ld_v1, ld_k0, ld_k1, 
-		 ld_k2, ld_k3, displayV0, displayV1,
+		 input clk, 	
+		 input resetFlag, load, displayV0, 
+		 displayV1, drawV0, setSum, 
 		 ld_enc_sum, ld_enc_results_1,
 		 ld_enc_results_2, ld_enc_v0, ld_enc_v1,
 		 ld_dec_sum, ld_dec_results_1,
-		 ld_dec_results_2, ld_dec_v0, ld_dec_v1, load,
+		 ld_dec_results_2, ld_dec_v0, ld_dec_v1, 
 		 input [3:0] ld_counter,
-		 resetFlag, setSum, go,
 		 input [7:0] received_data,
-		 output reg [31:0] finalResult
+		 output reg [31:0] finalResult,
+		 output reg [5:0] xcounter,
+		 output reg [5:0] ycounter,
+		 output reg [7:0] startX,
+		 output reg [6:0] startY,
+		 output reg [12:0] addressCounter,
+		 output reg donedraw
 );
 
 reg [31:0] sum = 32'd0;
@@ -98,6 +163,7 @@ reg [31:0] result1, result2,
 result3, result4, 
 result5, result6,
 k0, k1, k2, k3, v0, v1;
+reg done = 1'b0, chngstart = 1'b0, firstrow = 1'b1;
 
 localparam delta = 32'h9e3779b9;
 
@@ -422,6 +488,117 @@ localparam delta = 32'h9e3779b9;
 			
 				if (displayV1) finalResult[31:16] <= v1[15:0];
 				
+				if (drawV0) begin//
+				
+					/* if (v0 == 32'd1) begin//
+					
+						startX <= 8'd25;
+						startY <= 7'd25;
+					
+						// draw 1 
+						if (ycounter != 2'd3) begin
+							ycounter <= ycounter + 2'd1;
+							donedraw <= 1'b0;
+						end
+						else donedraw <= 1'b1;
+								
+					end// */
+					
+			
+					if (v0 == 32'd1) begin
+						
+						startX <= 8'd15;
+						startY <= 7'd25;
+						
+						if (firstrow) begin
+							addressCounter <=  13'd15;
+							firstrow <= 1'b0;
+						end
+						
+						if (xcounter != 6'd10) begin 
+							xcounter <= xcounter + 6'd1;
+							addressCounter <= addressCounter + 13'd1;
+							donedraw <= 1'b0;
+						end
+					
+						else begin
+					
+							xcounter <= 6'd0;
+							if (addressCounter != 13'd4375)
+								addressCounter <= addressCounter + 13'd150;
+							
+							if(ycounter != 30) begin
+								ycounter <= ycounter + 6'd1;
+								donedraw <= 1'b0;
+							end
+							else begin
+								donedraw <= 1'b1;		
+								firstrow <= 1'b1;
+							end
+							
+						end
+
+					end
+				
+				
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+					if (v0 == 32'd2) begin//
+					
+					     if (!chngstart) begin
+								startX <= 8'd25;
+								startY <= 7'd25;
+							end 
+							else if (chngstart) begin
+								startX <= 8'd25;
+								startY <= 7'd27;
+							end
+					
+						// draw 2 
+						if (xcounter != 2'd3) begin//
+							xcounter <= xcounter + 2'd1;
+							donedraw <= 1'b0;
+						end ///
+					
+						else if (xcounter == 2'd3) begin//
+							if (ycounter != 2'd2) begin
+								ycounter <= ycounter + 2'd1;
+								donedraw <= 1'b0;
+							end 
+							else if (ycounter == 2'd2 && done == 1'b0) begin
+								xcounter <= 2'd0;
+								ycounter <= 2'd0;
+								done <= 1'b1;
+								chngstart <= 1'b1;
+							end
+							else if (done) donedraw <= 1'b1;
+						end//
+
+		
+					end//
+								
+					
+				end//
+					
+				
+				
 				if(ld_enc_sum)
                 sum <= sum + delta; 
 	
@@ -477,22 +654,27 @@ endmodule
 
 module control (
 	 input clk,
-    input resetn,
-	 input [7:0] received_data,
-	 input received_data_en,
-	 output reg  load, displayV0, displayV1,
+	 
+	 output reg resetFlag, load, drawV0,
+	 displayV0, displayV1, 
+	 setSum,
+	  
 	 ld_enc_sum, ld_enc_results_1,
 	 ld_enc_results_2, ld_enc_v0, ld_enc_v1,
+	 
 	 ld_dec_sum, ld_dec_results_1,
 	 ld_dec_results_2, ld_dec_v0, ld_dec_v1,
-	 resetFlag, setSum,
-	 output reg [3:0] ld_counter
+	 plotOutput,
+	 
+	 output reg [3:0] ld_counter,	 
+	 input [7:0] received_data,
+	 input received_data_en, donedraw
 );
 
     reg [5:0] current_state, next_state; 
-     reg [5:0] counter = 6'd0;
-	  	reg ldcountFlag = 1'b0;
-		reg spcpressed = 1'b0;
+    reg [5:0] counter = 6'd0;
+	 reg ldcountFlag = 1'b0;
+	 reg spcpressed = 1'b0;
 
 	  
     localparam  LOAD              = 5'd0,
@@ -512,8 +694,9 @@ module control (
 					 D_V0              = 5'd14,
 					 D_SUM             = 5'd15,
 					 D_DISPLAY_V0      = 5'd16,
-					 D_DISPLAY_V1      = 5'd17,
-					 FINAL             = 5'd18;
+					 D_DRAW_V0         = 5'd17,
+					 D_DISPLAY_V1      = 5'd18,
+					 FINAL             = 5'd19;
     
 	
 	    // Next state logic aka our state table
@@ -553,7 +736,9 @@ module control (
 					 
 					 D_SUM: next_state = (counter == 6'd32) ? D_DISPLAY_V0: D_RESULTS_1;
 					 
-					 D_DISPLAY_V0: next_state = D_DISPLAY_V1;
+					 D_DISPLAY_V0: next_state = D_DRAW_V0/*D_DISPLAY_V1*/;
+					 
+					 D_DRAW_V0: next_state = (donedraw) ? D_DISPLAY_V1 : D_DRAW_V0;
 					 
 					 D_DISPLAY_V1: next_state = FINAL;
 					 
@@ -572,6 +757,8 @@ module control (
 		  load = 1'b0;
 		  displayV0 = 1'b0;
 		  displayV1 = 1'b0;
+		  drawV0 = 1'b0;
+		  plotOutput = 1'b0;
 		  
 		  ld_enc_sum = 1'b0;
 		  ld_enc_results_1 = 1'b0;
@@ -650,6 +837,11 @@ module control (
 					 
 				D_DISPLAY_V0: begin
 					 displayV0 = 1'b1;
+					 end
+				
+				D_DRAW_V0: begin
+					 drawV0 = 1'b1;
+					 plotOutput = 1'b1;
 					 end
 				
 				D_DISPLAY_V1: begin
@@ -744,4 +936,3 @@ module hex_decoder(hex_digit, segments);
             default: segments = 7'h7f;
         endcase
 endmodule
-
