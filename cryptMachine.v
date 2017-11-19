@@ -33,6 +33,10 @@ output [9:0]
 	wire [5:0] ycounter;
 	wire [7:0] startX;
 	wire [6:0] startY;
+	wire [5:0] xcounterd;
+	wire [5:0] ycounterd;
+	wire [7:0] startXd;
+	wire [6:0] startYd;
 	
 	PS2_Controller k0 (
 		.CLOCK_50(CLOCK_50),
@@ -77,6 +81,18 @@ output [9:0]
 		.donedraw(donedraw)
 	);
 	
+	vgaInput vi (
+	 .clock(CLOCK_50),
+	 .xcounter(xcounter),
+	 .ycounter(ycounter),
+	 .startX(startX),
+	 .startY(startY),
+	 .xcounterd(xcounterd),
+	 .ycounterd(ycounterd),
+	 .startXd(startXd),
+	 .startYd(startYd)
+   );
+	
 	control c0 (
 		 .clk(CLOCK_50),
 		 
@@ -104,8 +120,8 @@ output [9:0]
 			.resetn(KEY[0]),
 			.clock(CLOCK_50),
 			.colour(romColourOutput),
-			.x(startX + xcounter),
-			.y(startY + ycounter),
+			.x(startXd + xcounterd),
+			.y(startYd + ycounterd),
 			.plot(writeEn),
 			/* Signals for the DAC to drive the monitor. */
 			.VGA_R(VGA_R),
@@ -138,6 +154,26 @@ output [9:0]
 	
 endmodule
 
+module vgaInput (
+	input clock,
+	input	[5:0] xcounter,
+	input [5:0] ycounter,
+	input [7:0] startX,
+	input [6:0] startY,
+	output reg [5:0] xcounterd,
+	output reg [5:0] ycounterd,
+	output reg [7:0] startXd,
+	output reg [6:0] startYd
+);
+
+	always@(posedge clock) begin	
+		xcounterd <= xcounter;
+		ycounterd <= ycounter;
+		startXd <= startX;
+		startYd <= startY;	
+	end
+
+endmodule
 
 module datapath (
 		 input clk, 	
@@ -507,27 +543,30 @@ localparam delta = 32'h9e3779b9;
 			
 					if (v0 == 32'd1) begin
 						
-						startX <= 8'd15;
+						startX <= 8'd16;
 						startY <= 7'd25;
 						
-						if (firstrow) begin
-							addressCounter <=  13'd15;
-							firstrow <= 1'b0;
-						end
-						
 						if (xcounter != 6'd10) begin 
-							xcounter <= xcounter + 6'd1;
-							addressCounter <= addressCounter + 13'd1;
-							donedraw <= 1'b0;
+							
+							if (firstrow) begin
+								addressCounter <=  13'd15;
+								xcounter <= 6'd0;
+								ycounter <= 6'd0;
+								firstrow <= 1'b0;
+								donedraw <= 1'b0;
+						   end
+							else begin
+								xcounter <= xcounter + 6'd1;
+								addressCounter <= addressCounter + 13'd1;
+								donedraw <= 1'b0;
+							end
 						end
 					
-						else begin
-					
-							xcounter <= 6'd0;
-							if (addressCounter != 13'd4375)
-								addressCounter <= addressCounter + 13'd150;
+						else begin						
 							
-							if(ycounter != 30) begin
+							if(ycounter != 6'd30) begin
+								xcounter <= 6'd0;
+								addressCounter <= addressCounter + 13'd140;// 140 not 150
 								ycounter <= ycounter + 6'd1;
 								donedraw <= 1'b0;
 							end
