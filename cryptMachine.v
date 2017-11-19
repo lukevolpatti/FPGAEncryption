@@ -10,9 +10,10 @@ output [9:0] LEDR
 
 	wire [31:0] finalResult;
 	wire ld_v0, ld_v1, ld_k0, ld_k1, ld_k2, ld_k3, displayV0, displayV1,
-	ld_enc_sum, ld_enc_results_1, ld_enc_results_2, ld_enc_v0, ld_enc_v1,
-	ld_dec_sum, ld_dec_results_1, ld_dec_results_2, ld_dec_v0, ld_dec_v1,
-	setSum, resetFlag;
+	ld_enc_sum, ld_enc_results_1, ld_enc_results_2, ld_enc_results_3, ld_enc_results_4, 
+	ld_enc_v0, ld_enc_v1,
+	ld_dec_sum, ld_dec_results_1, ld_dec_results_2, ld_dec_results_3, ld_dec_results_4,
+	ld_dec_v0, ld_dec_v1, setSum, resetFlag;
 	
 	datapath d0 (
 		.clk(CLOCK_50), 
@@ -21,9 +22,11 @@ output [9:0] LEDR
 		.ld_v0(ld_v0), .ld_v1(ld_v1), .ld_k0(ld_k0), .ld_k1(ld_k1), 
 		.ld_k2(ld_k2), .ld_k3(ld_k3), .displayV0(displayV0), .displayV1(displayV1),
 		.ld_enc_sum(ld_enc_sum), .ld_enc_results_1(ld_enc_results_1),
-		.ld_enc_results_2(ld_enc_results_2), .ld_enc_v0(ld_enc_v0), .ld_enc_v1(ld_enc_v1),
+		.ld_enc_results_2(ld_enc_results_2), .ld_enc_results_3(ld_enc_results_2), .ld_enc_results_4(ld_enc_results_2),
+		.ld_enc_v0(ld_enc_v0), .ld_enc_v1(ld_enc_v1),
 		.ld_dec_sum(ld_dec_sum), .ld_dec_results_1(ld_dec_results_1),
-		.ld_dec_results_2(ld_dec_results_2), .ld_dec_v0(ld_dec_v0), .ld_dec_v1(ld_dec_v1),
+		.ld_dec_results_2(ld_dec_results_2), .ld_dec_results_3(ld_dec_results_3), .ld_dec_results_4(ld_dec_results_4), 
+		.ld_dec_v0(ld_dec_v0), .ld_dec_v1(ld_dec_v1),
 		.finalResult(finalResult),
 		.resetFlag(resetFlag),
 		.setSum(setSum)
@@ -37,9 +40,11 @@ output [9:0] LEDR
 		 .ld_v0(ld_v0), .ld_v1(ld_v1), .ld_k0(ld_k0), .ld_k1(ld_k1), 
 		 .ld_k2(ld_k2), .ld_k3(ld_k3), .displayV0(displayV0), .displayV1(displayV1),
 		 .ld_enc_sum(ld_enc_sum), .ld_enc_results_1(ld_enc_results_1),
-		 .ld_enc_results_2(ld_enc_results_2), .ld_enc_v0(ld_enc_v0), .ld_enc_v1(ld_enc_v1),
+		 .ld_enc_results_2(ld_enc_results_2), .ld_enc_results_3(ld_enc_results_3), .ld_enc_results_4(ld_enc_results_4), 
+		 .ld_enc_v0(ld_enc_v0), .ld_enc_v1(ld_enc_v1),
 		 .ld_dec_sum(ld_dec_sum), .ld_dec_results_1(ld_dec_results_1),
-		 .ld_dec_results_2(ld_dec_results_2), .ld_dec_v0(ld_dec_v0), .ld_dec_v1(ld_dec_v1),
+		 .ld_dec_results_2(ld_dec_results_2), .ld_dec_results_3(ld_dec_results_3), .ld_dec_results_4(ld_dec_results_4), 
+		 .ld_dec_v0(ld_dec_v0), .ld_dec_v1(ld_dec_v1),
 		 .resetFlag(resetFlag),
 		 .setSum(setSum)
 	);
@@ -65,9 +70,11 @@ module datapath (
 		 input ld_v0, ld_v1, ld_k0, ld_k1, 
 		 ld_k2, ld_k3, displayV0, displayV1,
 		 ld_enc_sum, ld_enc_results_1,
-		 ld_enc_results_2, ld_enc_v0, ld_enc_v1,
+		 ld_enc_results_2, ld_enc_results_3,
+		 ld_enc_results_4, ld_enc_v0, ld_enc_v1,
 		 ld_dec_sum, ld_dec_results_1,
-		 ld_dec_results_2, ld_dec_v0, ld_dec_v1,
+		 ld_dec_results_2, ld_dec_results_3,
+		 ld_dec_results_4, ld_dec_v0, ld_dec_v1,
 		 resetFlag, setSum,
 		 output reg [31:0] finalResult
 );
@@ -142,7 +149,7 @@ localparam delta = 32'h9e3779b9;
 				if(ld_enc_sum)
                 sum <= sum + delta; 
 	
-            if(ld_enc_results_1)  begin
+            /*if(ld_enc_results_1)  begin
                 result1 <= (v1 << 4) + k0;
 					 result2 <= v1 + sum;
 					 result3 <= (v1 >> 5) + k1;
@@ -152,7 +159,29 @@ localparam delta = 32'h9e3779b9;
                 result4 <= (v0 << 4) + k2;
 					 result5 <= v0 + sum;
 					 result6 <= (v0 >> 5) + k3; 
+					 end */
+					 
+				if(ld_enc_results_1)  begin
+                result1 <= (v1 << 4);
+					 result2 <= v1 + sum;
+					 result3 <= (v1 >> 5);
 					 end 
+					 
+				if(ld_enc_results_2)  begin
+                result1 <= result1 + k0;
+					 result3 <= result3 + k1;
+					 end 
+					 
+			   if(ld_enc_results_3)  begin
+                result4 <= (v0 << 4);
+					 result5 <= v0 + sum;
+					 result6 <= (v0 >> 5); 
+					 end 
+				
+				if(ld_enc_results_4)  begin
+                result4 <= result4 + k2;
+					 result6 <= result6 + k3; 
+					 end
 					 					 
             if(ld_enc_v0) begin
                 v0 <= v0 + (result1 ^ result2 ^ result3);
@@ -168,7 +197,7 @@ localparam delta = 32'h9e3779b9;
 					 sum <= sum - delta;
 					 end
 					 
-				if(ld_dec_results_1) begin
+				/*if(ld_dec_results_1) begin
                 result1 <= (v0 << 4) + k2;
 					 result2 <= v0 + sum;
 					 result3 <= (v0 >> 5) + k3; 	 
@@ -178,7 +207,29 @@ localparam delta = 32'h9e3779b9;
                 result4 <= (v1 << 4) + k0;
 					 result5 <= v1 + sum;
 					 result6 <= (v1 >> 5) + k1;
-					 end 
+					 end */
+					 
+				if(ld_dec_results_1) begin
+                result1 <= (v0 << 4);
+					 result2 <= v0 + sum;
+					 result3 <= (v0 >> 5); 	 
+					end 
+					
+				if(ld_dec_results_2) begin
+					result1 <= result1 + k2;
+					result3 <= result3 + k3;
+				end
+					
+				if(ld_dec_results_3)  begin
+                result4 <= (v1 << 4);
+					 result5 <= v1 + sum;
+					 result6 <= (v1 >> 5);
+				end 
+				
+				if(ld_dec_results_4) begin
+					result4 <= result4 + k0;
+					result5 <= result5 + k1;
+				end
 					 
 				if(ld_dec_v1) begin
                 v1 <= v1 - (result1 ^ result2 ^ result3);
@@ -201,44 +252,50 @@ module control (
 	 output reg ld_v0, ld_v1, ld_k0, ld_k1, 
 	 ld_k2, ld_k3, displayV0, displayV1,
 	 ld_enc_sum, ld_enc_results_1,
-	 ld_enc_results_2, ld_enc_v0, ld_enc_v1,
+	 ld_enc_results_2, ld_enc_results_3,
+	 ld_enc_results_4, ld_enc_v0, ld_enc_v1,
 	 ld_dec_sum, ld_dec_results_1,
-	 ld_dec_results_2, ld_dec_v0, ld_dec_v1,
+	 ld_dec_results_2, ld_dec_results_3,
+	 ld_dec_results_4, ld_dec_v0, ld_dec_v1,
 	 resetFlag, setSum
 );
 
     reg [5:0] current_state, next_state; 
      reg [5:0] counter = 6'd0;
 	  
-    localparam  LOAD_V0           = 5'd0,
-                LOAD_V0_WAIT      = 5'd1,
-                LOAD_V1           = 5'd2,
-                LOAD_V1_WAIT      = 5'd3,
-                LOAD_K0           = 5'd4,
-                LOAD_K0_WAIT      = 5'd5,
-                LOAD_K1           = 5'd6,
-                LOAD_K1_WAIT      = 5'd7,
-                LOAD_K2           = 5'd8,
-                LOAD_K2_WAIT      = 5'd9,
-                LOAD_K3           = 5'd10,
-					 LOAD_K3_WAIT      = 5'd11,
-		          WAIT_FOR_ENCRYPT  = 5'd12,
-					 E_SUM             = 5'd13,
-					 E_RESULTS_1       = 5'd14,
-					 E_V0              = 5'd15,
-					 E_RESULTS_2       = 5'd16,
-					 E_V1              = 5'd17,
-					 E_DISPLAY_V0      = 5'd18,
-					 E_DISPLAY_V1      = 5'd19,
-					 WAIT_FOR_DECRYPT  = 5'd20,
-					 D_RESULTS_1       = 5'd21,
-					 D_V1              = 5'd22,
-					 D_RESULTS_2       = 5'd23,
-					 D_V0              = 5'd24,
-					 D_SUM             = 5'd25,
-					 D_DISPLAY_V0      = 5'd26,
-					 D_DISPLAY_V1      = 5'd27,
-					 FINAL             = 5'd28;
+    localparam  LOAD_V0           = 6'd0,
+                LOAD_V0_WAIT      = 6'd1,
+                LOAD_V1           = 6'd2,
+                LOAD_V1_WAIT      = 6'd3,
+                LOAD_K0           = 6'd4,
+                LOAD_K0_WAIT      = 6'd5,
+                LOAD_K1           = 6'd6,
+                LOAD_K1_WAIT      = 6'd7,
+                LOAD_K2           = 6'd8,
+                LOAD_K2_WAIT      = 6'd9,
+                LOAD_K3           = 6'd10,
+					 LOAD_K3_WAIT      = 6'd11,
+		          WAIT_FOR_ENCRYPT  = 6'd12,
+					 E_SUM             = 6'd13,
+					 E_RESULTS_1       = 6'd14,
+					 E_RESULTS_2		 = 6'd15,
+					 E_V0              = 6'd16,
+					 E_RESULTS_3       = 6'd17,
+					 E_RESULTS_4		 = 6'd18,
+					 E_V1              = 6'd19,
+					 E_DISPLAY_V0      = 6'd20,
+					 E_DISPLAY_V1      = 6'd21,
+					 WAIT_FOR_DECRYPT  = 6'd22,
+					 D_RESULTS_1       = 6'd23,
+					 D_RESULTS_2		 = 6'd24,
+					 D_V1              = 6'd25,
+					 D_RESULTS_3       = 6'd26,
+					 D_RESULTS_4		 = 6'd27,
+					 D_V0              = 6'd28,
+					 D_SUM             = 6'd29,
+					 D_DISPLAY_V0      = 6'd30,
+					 D_DISPLAY_V1      = 6'd31,
+					 FINAL             = 6'd32;
     
 	
 	    // Next state logic aka our state table
@@ -286,11 +343,15 @@ module control (
 					 
 					 E_SUM: next_state = E_RESULTS_1;
 					 
-					 E_RESULTS_1: next_state = E_V0;
+					 E_RESULTS_1: next_state = E_RESULTS_2;
 					 
-					 E_V0: next_state = E_RESULTS_2; 
+					 E_RESULTS_2: next_state = E_V0;
 					 
-					 E_RESULTS_2: next_state = E_V1;
+					 E_V0: next_state = E_RESULTS_3; 
+					 
+					 E_RESULTS_3: next_state = E_RESULTS_4;
+					 
+					 E_RESULTS_4: next_state = E_V1;
 					 
 					 E_V1: next_state = (counter == 6'd32) ? E_DISPLAY_V0: E_SUM;
 					 	 
@@ -300,11 +361,15 @@ module control (
 					 
 					 WAIT_FOR_DECRYPT: next_state = /*go*/decrypt ? D_RESULTS_1: WAIT_FOR_DECRYPT;
 					 
-					 D_RESULTS_1: next_state = D_V1;
+					 D_RESULTS_1: next_state = D_RESULTS_2;
 					 
-					 D_V1: next_state = D_RESULTS_2; 
+					 D_RESULTS_2: next_state = D_V1;
 					 
-					 D_RESULTS_2: next_state = D_V0;
+					 D_V1: next_state = D_RESULTS_3; 
+					 
+					 D_RESULTS_3: next_state = D_RESULTS_4;
+					 
+					 D_RESULTS_4: next_state = D_V0;
 					 
 					 D_V0: next_state = D_SUM;
 					 
@@ -312,7 +377,7 @@ module control (
 					 
 					 D_DISPLAY_V0: next_state = D_DISPLAY_V1;
 					 
-					 D_DISPLAY_V1: next_state = FINAL;
+					 D_DISPLAY_V1: next_state = !resetn ? FINAL : D_DISPLAY_V1;
 					 
 					 FINAL: next_state = LOAD_V0;
 
@@ -337,12 +402,16 @@ module control (
 		  ld_enc_sum = 1'b0;
 		  ld_enc_results_1 = 1'b0;
 		  ld_enc_results_2 = 1'b0;
+		  ld_enc_results_3 = 1'b0;
+		  ld_enc_results_4 = 1'b0;
 		  ld_enc_v0 = 1'b0;
 		  ld_enc_v1 = 1'b0;
 		  
 		  ld_dec_sum = 1'b0;
 		  ld_dec_results_1 = 1'b0;
 		  ld_dec_results_2 = 1'b0;
+		  ld_dec_results_3 = 1'b0;
+		  ld_dec_results_4 = 1'b0;
 		  ld_dec_v0 = 1'b0;
 		  ld_dec_v1 = 1'b0;
 
@@ -382,13 +451,21 @@ module control (
 				E_RESULTS_1: begin
 					 ld_enc_results_1 = 1'b1;
 					 end
+				
+				E_RESULTS_2: begin
+					 ld_enc_results_2 = 1'b1;
+					 end
 					 
 				E_V0: begin
 					 ld_enc_v0 = 1'b1;
 					 end
 					 
-				E_RESULTS_2: begin
-					 ld_enc_results_2 = 1'b1;
+				E_RESULTS_3: begin
+					 ld_enc_results_3 = 1'b1;
+					 end
+				
+				E_RESULTS_4: begin
+					 ld_enc_results_4 = 1'b1;
 					 end
 					 
 				E_V1: begin
@@ -413,12 +490,20 @@ module control (
 					 ld_dec_results_1 = 1'b1;
 					 end
 					 
+				D_RESULTS_2: begin
+					 ld_dec_results_2 = 1'b1;
+					 end
+					 
 				D_V1: begin
 					 ld_dec_v1 = 1'b1;
 					 end
 					 
-			   D_RESULTS_2: begin
-					 ld_dec_results_2 = 1'b1;
+			   D_RESULTS_3: begin
+					 ld_dec_results_3 = 1'b1;
+					 end
+					 
+				D_RESULTS_4: begin
+					 ld_dec_results_4 = 1'b1;
 					 end
 				
 				D_V0: begin
