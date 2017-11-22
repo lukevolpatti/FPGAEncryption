@@ -161,6 +161,8 @@ localparam delta = 32'h9e3779b9;
 					 result6 <= (v0 >> 5) + k3; 
 					 end */
 					 
+				// Pipelining:
+					 
 				if(ld_enc_results_1)  begin
                 result1 <= (v1 << 4);
 					 result2 <= v1 + sum;
@@ -189,7 +191,15 @@ localparam delta = 32'h9e3779b9;
 										
 				if(ld_enc_v1) begin
                 v1 <= v1 + (result4 ^ result5 ^ result6);
-					 end		 
+					 end
+			
+				// Pipelining:
+				/*if(ld_enc_v0_1) begin
+					result1 <= (result1 ^ result2 ^ result3);
+					end
+					
+				if(ld_enc_v0_2) begin
+					v0 <= v0*/
 					  
 				if (setSum) sum <= 32'hC6EF3720;	 
 				
