@@ -19,24 +19,46 @@ output [9:0]
 );
 
 	wire [31:0] finalResult;
+	wire [3:0] frameOutput;
 	wire [7:0] received_data;
 	wire [3:0] ld_counter;
+	wire [3:0] indexcounter;
 	wire received_data_en;
-	wire load, displayV0, displayV1,
+	wire load, displayV0, displayV1, skip,
 	ld_enc_sum, ld_enc_results_1, ld_enc_results_2, ld_enc_v0, ld_enc_v1,
 	ld_dec_sum, ld_dec_results_1, ld_dec_results_2, ld_dec_v0, ld_dec_v1,
-	setSum, resetFlag, drawV0, donedraw;
-	wire writeEn;
-	wire [2:0] romColourOutput;
+	setSum, resetFlag, drawV0, eraseV0, drawV0E, eraseV0E, drawV1E, eraseV1E, 
+	eraseV1, enableRateDivider, drawV1, donedrawv0, doneerasev0, doneerasev1, 
+	donedrawv1, draw, v0flag, v0erase, v1erase, v1flag;
+	wire writeEn, indexv0, indexv1, drawLetter;
+	wire [2:0] romColourOutput; // what goes to vga
+	wire [2:0] romColourOutput1; // for drawing numbers
+	wire [2:0] romColourOutput2; // for drawing letters
    wire [12:0] addressCounter;
+	wire [12:0] addressCounterLetters;
+   wire [12:0] startAddress;
 	wire [5:0] xcounter;
 	wire [5:0] ycounter;
 	wire [7:0] startX;
 	wire [6:0] startY;
-	wire [5:0] xcounterd;
-	wire [5:0] ycounterd;
-	wire [7:0] startXd;
-	wire [6:0] startYd;
+	wire [7:0] startXWire;
+	wire [6:0] startYWire;
+	
+	wire donedrawv0L, doneerasev0L, doneerasev1L, donedrawv1L;
+		wire [5:0] xcounterL;
+	wire [5:0] ycounterL;
+	wire [7:0] startXL;
+	wire [6:0] startYL;
+	
+		wire [5:0] xcounterF;
+	wire [5:0] ycounterF;
+			wire [7:0] startXF;
+		wire [6:0] startYF;
+		wire selectCounters;
+		 
+	//wire [6:0] current_state; //
+	
+	wire [1:0] selectRom;
 	
 	PS2_Controller k0 (
 		.CLOCK_50(CLOCK_50),
@@ -47,21 +69,96 @@ output [9:0]
 		.received_data_en(received_data_en) 
 		// If 1: new data (NOTE: DOES NOT MEAN DIFFERENT DATA) has been received
 	);
+	
+	
+	letters l0 (
+	 .address(addressCounterLetters),
+	 .clock(CLOCK_50),
+	 .q(romColourOutput2)	
+	);
 
 	
 	numbers n0 (
 	 .address(addressCounter),
 	 .clock(CLOCK_50),
-	 .q(romColourOutput)
+	 .q(romColourOutput1)
 	);
 	
+	
+	selectRomOutput s (
+		.romColourOutput1(romColourOutput1),
+		.romColourOutput2(romColourOutput2),
+		.selectRom(selectRom),
+		.romColourOutput(romColourOutput)
+	);
+	
+	selectCounter C0 (
+	.selectCounters(selectCounters),
+		.xcounter(xcounter),
+      .ycounter(ycounter),
+		.startX(startX),
+		.startY(startY),	
+				.xcounterL(xcounterL),
+      .ycounterL(ycounterL),
+		.startXL(startXL),
+		.startYL(startYL),
+
+	.xcounterF(xcounterF),
+	.ycounterF(ycounterF),
+	.startXF(startXF),
+	.startYF(startYF)
+	);
+	
+drawDecryptedOutput o (
+		 .clk(CLOCK_50),
+		 .draw(draw),
+		 .startXWire(startXWire),
+		 .startYWire(startYWire),
+		 .startAddress(startAddress),
+		.xcounter(xcounter),
+      .ycounter(ycounter),
+		.startX(startX),
+		.startY(startY),		
+		.addressCounter(addressCounter),
+		.donedrawv0(donedrawv0),
+		.doneerasev0(doneerasev0),
+		.doneerasev1(doneerasev1),
+		.donedrawv1(donedrawv1),
+		.v0flag(v0flag),
+		.v1flag(v1flag),
+		.v0erase(v0erase),
+		.v1erase(v1erase)
+);
+
+drawLetterOutput L0 (
+		 .clk(CLOCK_50),
+		 .drawLetter(drawLetter),
+		 .startXWire(startXWire),
+		 .startYWire(startYWire),
+		 .startAddress(startAddress),
+		.xcounterL(xcounterL),
+      .ycounterL(ycounterL),
+		.startXL(startXL),
+		.startYL(startYL),		
+		.addressCounterLetters(addressCounterLetters),
+		.donedrawv0L(donedrawv0L),
+		.doneerasev0L(doneerasev0L),
+		.doneerasev1L(doneerasev1L),
+		.donedrawv1L(donedrawv1L),
+		.v0flag(v0flag),
+		.v1flag(v1flag),
+		.v0erase(v0erase),
+		.v1erase(v1erase)
+);
+
 
 	datapath d0 (
-		.clk(CLOCK_50), 	
+		.clk(CLOCK_50), .resetn(KEY[0]),
 		
-      .resetFlag(resetFlag), .load(load), .drawV0(drawV0),
+      .resetFlag(resetFlag), .load(load), .drawV0(drawV0), .drawV1(drawV1),
 		.displayV0(displayV0), .displayV1(displayV1),
 		.setSum(setSum),
+		.eraseV0(eraseV0),  .eraseV1(eraseV1),
 		
 		.ld_enc_sum(ld_enc_sum), .ld_enc_results_1(ld_enc_results_1),
 		.ld_enc_results_2(ld_enc_results_2), .ld_enc_v0(ld_enc_v0), .ld_enc_v1(ld_enc_v1),
@@ -71,32 +168,37 @@ output [9:0]
 		
 		.ld_counter(ld_counter),
 		.received_data(received_data),
-		
+                .draw(draw),
+					 .drawLetter(drawLetter),
+					 .v0flag(v0flag),
+					 .v1flag(v1flag),
+					 .indexv0(indexv0),
+					 .indexv1(indexv1),
+					 .indexcounter(indexcounter),
+					 
+					 .drawV0E(drawV0E),
+					 .eraseV0E(eraseV0E),
+					 					 
+					 .drawV1E(drawV1E),
+					 .eraseV1E(eraseV1E),
 		.finalResult(finalResult),
-		.xcounter(xcounter),
-      .ycounter(ycounter),
-		.startX(startX),
-		.startY(startY),		
-		.addressCounter(addressCounter),
-		.donedraw(donedraw)
+		.startXWire(startXWire),
+		.startYWire(startYWire),		
+		.startAddress(startAddress),
+		.selectRom(selectRom),
+		.selectCounters(selectCounters),
+		.v0erase(v0erase),
+		.v1erase(v1erase),
+		.enableRateDivider(enableRateDivider),
+		.frameOutput(frameOutput),
+		.skip(skip)
 	);
 	
-	vgaInput vi (
-	 .clock(CLOCK_50),
-	 .xcounter(xcounter),
-	 .ycounter(ycounter),
-	 .startX(startX),
-	 .startY(startY),
-	 .xcounterd(xcounterd),
-	 .ycounterd(ycounterd),
-	 .startXd(startXd),
-	 .startYd(startYd)
-   );
 	
 	control c0 (
 		 .clk(CLOCK_50),
 		 
-       .resetFlag(resetFlag), .load(load), .drawV0(drawV0),
+       .resetFlag(resetFlag), .load(load), .drawV0(drawV0), .drawV1(drawV1),
 		 .displayV0(displayV0), .displayV1(displayV1),
 		 .setSum(setSum),
 		 
@@ -106,11 +208,31 @@ output [9:0]
 		 .ld_dec_sum(ld_dec_sum), .ld_dec_results_1(ld_dec_results_1),
 		 .ld_dec_results_2(ld_dec_results_2), .ld_dec_v0(ld_dec_v0), .ld_dec_v1(ld_dec_v1),
 		 
+		 					 .drawV0E(drawV0E),
+					 .eraseV0E(eraseV0E),
+					 		 					 .drawV1E(drawV1E),
+					 .eraseV1E(eraseV1E),
 		 .ld_counter(ld_counter),
 		 .received_data(received_data),
 		 .received_data_en(received_data_en),
+		 .enableRateDivider(enableRateDivider),
 		 .plotOutput(writeEn),
-		 .donedraw(donedraw) 
+		 .donedrawv0(donedrawv0),
+		 .doneerasev0(doneerasev0),
+		 .doneerasev1(doneerasev1),
+		 .eraseV0(eraseV0),
+		 .eraseV1(eraseV1),
+		 .frameOutput(frameOutput),
+		 .indexv0(indexv0),
+		 .indexv1(indexv1),
+		 .indexcounter(indexcounter),
+		 .skip(skip),
+		 .donedrawv1(donedrawv1),
+		 		.donedrawv0L(donedrawv0L),
+		.doneerasev0L(doneerasev0L),
+		.doneerasev1L(doneerasev1L),
+		.donedrawv1L(donedrawv1L)//,
+		 //.current_state(current_state)
 	);
 	
 	// Create an Instance of a VGA controller - there can be only one!
@@ -120,8 +242,8 @@ output [9:0]
 			.resetn(KEY[0]),
 			.clock(CLOCK_50),
 			.colour(romColourOutput),
-			.x(startXd + xcounterd),
-			.y(startYd + ycounterd),
+			.x(startXF + xcounterF),
+			.y(startYF + ycounterF),
 			.plot(writeEn),
 			/* Signals for the DAC to drive the monitor. */
 			.VGA_R(VGA_R),
@@ -149,49 +271,275 @@ output [9:0]
 	
 	assign LEDR[3:0] = finalResult[15:12];
 	assign LEDR[7:4] = finalResult[31:28];
-	
+	// assign LEDR = current_state;
 	// assign LEDR = ld_counter;
 	
 endmodule
 
-module vgaInput (
-	input clock,
-	input	[5:0] xcounter,
-	input [5:0] ycounter,
-	input [7:0] startX,
-	input [6:0] startY,
-	output reg [5:0] xcounterd,
-	output reg [5:0] ycounterd,
-	output reg [7:0] startXd,
-	output reg [6:0] startYd
-);
-
-	always@(posedge clock) begin	
-		xcounterd <= xcounter;
-		ycounterd <= ycounter;
-		startXd <= startX;
-		startYd <= startY;	
+module selectRomOutput (
+		input [2:0] romColourOutput1,
+		input [2:0] romColourOutput2,
+		input [1:0] selectRom,
+		output reg [2:0] romColourOutput
+	);
+	
+	always @(*)
+	begin
+		case (selectRom)
+			2'd0: romColourOutput = 3'b000;
+			2'd1: romColourOutput = romColourOutput1;
+			2'd2: romColourOutput = romColourOutput2;
+			default: romColourOutput = 3'b000;
+		endcase
 	end
-
+	
 endmodule
 
-module datapath (
-		 input clk, 	
-		 input resetFlag, load, displayV0, 
-		 displayV1, drawV0, setSum, 
-		 ld_enc_sum, ld_enc_results_1,
-		 ld_enc_results_2, ld_enc_v0, ld_enc_v1,
-		 ld_dec_sum, ld_dec_results_1,
-		 ld_dec_results_2, ld_dec_v0, ld_dec_v1, 
-		 input [3:0] ld_counter,
-		 input [7:0] received_data,
-		 output reg [31:0] finalResult,
+module selectCounter (
+	    input selectCounters,
+		 input [5:0] xcounter,
+		 input [5:0] ycounter,
+		 input [7:0] startX,
+		 input [6:0] startY,
+		 input [5:0] xcounterL,
+		 input [5:0] ycounterL,
+		 input [7:0] startXL,
+		 input [6:0] startYL,
+	output reg [5:0] xcounterF,
+	output reg [5:0] ycounterF,
+			 output reg [7:0] startXF,
+		 output reg [6:0] startYF
+	
+	);
+	
+		always @(*)
+	begin
+		case (selectCounters)
+			1'd0: begin
+			xcounterF = xcounter;
+			ycounterF = ycounter;
+			startXF = startX;
+			startYF = startY;
+			end
+			1'd1: begin
+			xcounterF = xcounterL;
+			ycounterF = ycounterL;
+			startXF = startXL;
+			startYF = startYL;
+			end
+			
+			default: begin
+			
+			xcounterF = xcounter;
+			ycounterF = ycounter;
+			startXF = startX;
+			startYF = startY;
+			
+			
+			end
+		endcase
+	end
+	
+endmodule
+
+module drawDecryptedOutput (
+		 input clk,
+		 input draw,
+		 input v0flag, v1flag, v0erase, v1erase,
+		 input [7:0] startXWire,
+		 input [6:0] startYWire,
+		 input [12:0] startAddress,
 		 output reg [5:0] xcounter,
 		 output reg [5:0] ycounter,
 		 output reg [7:0] startX,
 		 output reg [6:0] startY,
 		 output reg [12:0] addressCounter,
-		 output reg donedraw
+		 output reg donedrawv0,
+		  output reg donedrawv1,
+		  output reg doneerasev0,
+		  output reg doneerasev1
+);
+
+reg firstrow = 1'b1;
+
+always@(posedge clk) begin
+
+	if (draw) begin
+
+		startX <= startXWire;
+		startY <= startYWire;
+
+		if (xcounter != 6'd15) begin 
+		
+			if (firstrow) begin
+				if (!v0erase && !v1erase) addressCounter <=  startAddress;
+				xcounter <= 6'd0;
+				ycounter <= 6'd0;
+				firstrow <= 1'b0;
+				donedrawv0 <= 1'b0;
+				doneerasev0 <= 1'b0;
+				doneerasev1 <= 1'b0;
+				donedrawv1 <= 1'b0;
+			end
+			else begin
+				xcounter <= xcounter + 6'd1;
+				if (!v0erase && !v1erase) addressCounter <= addressCounter + 13'd1;
+				donedrawv0 <= 1'b0;
+				doneerasev0 <= 1'b0;
+				doneerasev1 <= 1'b0;
+				donedrawv1 <= 1'b0;
+			end
+			
+		end
+
+		else begin						
+							
+				if(ycounter != 6'd30) begin
+					xcounter <= 6'd0;
+					if (!v0erase && !v1erase) addressCounter <= addressCounter + 13'd135;
+					ycounter <= ycounter + 6'd1;
+					donedrawv0 <= 1'b0;
+					doneerasev0 <= 1'b0;
+					doneerasev1 <= 1'b0;
+					donedrawv1 <= 1'b0;
+				end
+				else begin
+					firstrow <= 1'b1;
+					if (v0flag) donedrawv0 <= 1'b1;	
+					if (v0erase) doneerasev0 <= 1'b1;
+					if (v1erase) doneerasev1 <= 1'b1;
+					if (v1flag) donedrawv1 <= 1'b1;
+				end		
+				
+		end
+			
+	end
+	else begin // draw = 1'b0; 
+				firstrow <= 1'b1;
+				xcounter <= 6'd0;
+				donedrawv0 <= 1'b0;
+				doneerasev0 <= 1'b0;
+				doneerasev1 <= 1'b0;
+				donedrawv1 <= 1'b0;
+				ycounter <= 6'd0;
+	
+	end
+	
+	
+		
+end
+
+endmodule
+
+module drawLetterOutput (
+		 input clk,
+		 input drawLetter,
+		 input v0flag, v1flag, v0erase, v1erase,
+		 input [7:0] startXWire,
+		 input [6:0] startYWire,
+		 input [12:0] startAddress,
+		 output reg [5:0] xcounterL,
+		 output reg [5:0] ycounterL,
+		 output reg [7:0] startXL,
+		 output reg [6:0] startYL,
+		 output reg [12:0] addressCounterLetters,
+		 output reg donedrawv0L,
+		  output reg donedrawv1L,
+		  output reg doneerasev0L,
+		  output reg doneerasev1L
+);
+
+reg firstrow = 1'b1;
+
+always@(posedge clk) begin
+
+	if (drawLetter) begin
+
+		startXL <= startXWire;
+		startYL <= startYWire;
+
+		if (xcounterL != 6'd15) begin 
+		
+			if (firstrow) begin
+				if (!v0erase && !v1erase) addressCounterLetters <=  startAddress;
+				xcounterL <= 6'd0;
+				ycounterL <= 6'd0;
+				firstrow <= 1'b0;
+				donedrawv0L <= 1'b0;
+				doneerasev0L <= 1'b0;
+				doneerasev1L <= 1'b0;
+				donedrawv1L <= 1'b0;
+			end
+			else begin
+				xcounterL <= xcounterL + 6'd1;
+				if (!v0erase && !v1erase) addressCounterLetters <= addressCounterLetters + 13'd1;
+				donedrawv0L <= 1'b0;
+				doneerasev0L <= 1'b0;
+				doneerasev1L <= 1'b0;
+				donedrawv1L <= 1'b0;
+			end
+			
+		end
+
+		else begin						
+							
+				if(ycounterL != 6'd30) begin
+					xcounterL <= 6'd0;
+					if (!v0erase && !v1erase) addressCounterLetters <= addressCounterLetters + 13'd75;
+					ycounterL <= ycounterL + 6'd1;
+					donedrawv0L <= 1'b0;
+					doneerasev0L <= 1'b0;
+					doneerasev1L <= 1'b0;
+					donedrawv1L <= 1'b0;
+				end
+				else begin
+					firstrow <= 1'b1;
+					if (v0flag) donedrawv0L <= 1'b1;	
+					if (v0erase) doneerasev0L <= 1'b1;
+					if (v1erase) doneerasev1L <= 1'b1;
+					if (v1flag) donedrawv1L <= 1'b1;
+				end		
+				
+		end
+			
+	end
+	else begin // draw = 1'b0; 
+				firstrow <= 1'b1;
+				xcounterL <= 6'd0;
+				donedrawv0L <= 1'b0;
+				doneerasev0L <= 1'b0;
+				doneerasev1L <= 1'b0;
+				donedrawv1L <= 1'b0;
+				ycounterL <= 6'd0;
+	
+	end
+	
+	
+		
+end
+
+endmodule
+
+
+module datapath (
+		 input clk, resetn,
+		 input resetFlag, load, displayV0, 
+		 displayV1, drawV0, eraseV0, drawV0E, eraseV0E, drawV1E, eraseV1E, eraseV1, drawV1, setSum, 
+		 ld_enc_sum, ld_enc_results_1,
+		 ld_enc_results_2, ld_enc_v0, ld_enc_v1,
+		 ld_dec_sum, ld_dec_results_1,
+		 ld_dec_results_2, ld_dec_v0, ld_dec_v1, enableRateDivider,
+		 indexv0, indexv1,
+		 input [3:0] indexcounter,
+		 input [3:0] ld_counter,
+		 input [7:0] received_data,
+		 output reg [31:0] finalResult,
+       output reg draw, drawLetter, v0flag, v0erase, v1erase, v1flag, skip, selectCounters,
+		 output reg [1:0] selectRom,
+		 output reg [7:0] startXWire,
+		 output reg [6:0] startYWire,
+		 output reg [12:0] startAddress,
+		 output [3:0] frameOutput
 );
 
 reg [31:0] sum = 32'd0;
@@ -199,9 +547,12 @@ reg [31:0] result1, result2,
 result3, result4, 
 result5, result6,
 k0, k1, k2, k3, v0, v1;
-reg done = 1'b0, chngstart = 1'b0, firstrow = 1'b1;
+reg [3:0] v0_encrypted_data; 
+reg [3:0] v1_encrypted_data; 
 
 localparam delta = 32'h9e3779b9;
+ wire enableWire;
+ wire [25:0] rateDividerOutput;
 
     // Registers 
     always@(posedge clk) begin
@@ -225,8 +576,17 @@ localparam delta = 32'h9e3779b9;
 		  
         else begin
 		  
+					draw <= 1'b0;
+					drawLetter <= 1'b0;
+					v0flag <= 1'b0;
+					v1flag <= 1'b0;
+					v0erase <= 1'b0;
+					v1erase <= 1'b0;
+					skip <= 1'b0;
+					
 				if (resetFlag) begin
 					v0 <= 32'd0;
+					draw <= 1'b0;
 					v1 <= 32'd0;
 					k0 <= 32'd0;
 					k1 <= 32'd0;
@@ -523,120 +883,502 @@ localparam delta = 32'h9e3779b9;
 				if (displayV0) finalResult[15:0] <= v0[15:0];
 			
 				if (displayV1) finalResult[31:16] <= v1[15:0];
-				
-				if (drawV0) begin//
-				
-					/* if (v0 == 32'd1) begin//
-					
-						startX <= 8'd25;
-						startY <= 7'd25;
-					
-						// draw 1 
-						if (ycounter != 2'd3) begin
-							ycounter <= ycounter + 2'd1;
-							donedraw <= 1'b0;
-						end
-						else donedraw <= 1'b1;
-								
-					end// */
-					
+				// for encrypted data
+				// we need if (drawV0E || eraseV0E) 
+				// need temp register of 4 bits to store the section of v0 
+				// we are analyze and do that in a state before,
+				// so have a counter in the fsm that you increment from 0 to 1 to 2 to 3 
+				// in this state before and if counter is 0, you set ldflag0 to datapath
+				// --> to set temp reg <= v0[16:12] 
+				// if v0 == number --> same code as decrypted data
+				// if v0 == letter --> need new draw signal so draw of letter 
+				// doesnt happen, new start address, start x and start y wires
 			
-					if (v0 == 32'd1) begin
-						
-						startX <= 8'd16;
-						startY <= 7'd25;
-						
-						if (xcounter != 6'd10) begin 
-							
-							if (firstrow) begin
-								addressCounter <=  13'd15;
-								xcounter <= 6'd0;
-								ycounter <= 6'd0;
-								firstrow <= 1'b0;
-								donedraw <= 1'b0;
-						   end
-							else begin
-								xcounter <= xcounter + 6'd1;
-								addressCounter <= addressCounter + 13'd1;
-								donedraw <= 1'b0;
-							end
+				if (indexv0) begin
+									
+					if (indexcounter == 4'd0) v0_encrypted_data <= v0[31:28];
+					if (indexcounter == 4'd1) v0_encrypted_data <= v0[27:24];
+					if (indexcounter == 4'd2) v0_encrypted_data <= v0[23:20];
+					if (indexcounter == 4'd3) v0_encrypted_data <= v0[19:16];
+				
+				
+				
+					if (indexcounter == 4'd4) v0_encrypted_data <= v0[15:12];
+					if (indexcounter == 4'd5) v0_encrypted_data <= v0[11:8];
+					if (indexcounter == 4'd6) v0_encrypted_data <= v0[7:4];
+					if (indexcounter == 4'd7) v0_encrypted_data <= v0[3:0];
+				end
+				
+				if (drawV0E || eraseV0E) begin
+						// draw <= 1'b1; 
+						// draw changes based on whether it is a letter or number
+						startYWire <= 7'd25;
+						// startYWire changes based on whether it is a letter or number
+						// for now we can keep because only testing numbers 
+						if (drawV0E) begin
+							//selectRom <= 2'b1; 
+							// select rom will be different based on whether it was a letter or number
+							v0flag <= 1'b1;
 						end
-					
-						else begin						
-							
-							if(ycounter != 6'd30) begin
-								xcounter <= 6'd0;
-								addressCounter <= addressCounter + 13'd140;// 140 not 150
-								ycounter <= ycounter + 6'd1;
-								donedraw <= 1'b0;
-							end
-							else begin
-								donedraw <= 1'b1;		
-								firstrow <= 1'b1;
-							end
-							
+						if (eraseV0E) begin
+							selectRom <= 2'b0; 
+							// select rom will be 0 when erasing whether it was a number of letter
+							v0erase <= 1'b1;
 						end
-
+						
+					if (v0_encrypted_data == 32'd0) begin
+						if (!eraseV0E) selectRom <= 2'b1; 
+						draw <= 1'b1; // draw will be for numbers module
+						startAddress <=  13'd0;
+						selectCounters <= 1'b0;
+						startXWire <= 8'd0;
+						skip <= 1'b0;
 					end
+					
+					else if (v0_encrypted_data == 32'd1) begin
+						if (!eraseV0E) selectRom <= 2'b1; 
+						draw <= 1'b1;
+						startAddress <=  13'd15;
+						selectCounters <= 1'b0;
+						startXWire <= 8'd0;
+						skip <= 1'b0;
+					end
+
+					else if (v0_encrypted_data == 32'd2) begin
+					   if (!eraseV0E) selectRom <= 2'b1; 
+						draw <= 1'b1;
+						startAddress <=  13'd30;
+						selectCounters <= 1'b0;
+						startXWire <= 8'd0;
+						skip <= 1'b0;
+					end
+
+					else if (v0_encrypted_data == 32'd3) begin
+					   if (!eraseV0E) selectRom <= 2'b1; 
+						draw <= 1'b1;
+						startAddress <=  13'd45;
+						selectCounters <= 1'b0;
+						startXWire <= 8'd0;
+						skip <= 1'b0;
+					end
+
+					else if (v0_encrypted_data == 32'd4) begin
+					   if (!eraseV0E) selectRom <= 2'b1; 
+						draw <= 1'b1;
+						startAddress <=  13'd60;
+						selectCounters <= 1'b0;
+						startXWire <= 8'd0;
+						skip <= 1'b0;
+					end
+
+					else if (v0_encrypted_data == 32'd5) begin
+						if (!eraseV0E) selectRom <= 2'b1; 
+						draw <= 1'b1;
+						startAddress <=  13'd75;
+						selectCounters <= 1'b0;
+						startXWire <= 8'd0;
+						skip <= 1'b0;
+					end
+
+					else if (v0_encrypted_data == 32'd6) begin
+						if (!eraseV0E) selectRom <= 2'b1; 
+						draw <= 1'b1;
+						startAddress <=  13'd90;
+					selectCounters <= 1'b0;	
+						startXWire <= 8'd0;
+						skip <= 1'b0;
+					end
+
+					else if (v0_encrypted_data == 32'd7) begin
+						if (!eraseV0E) selectRom <= 2'b1; 
+						draw <= 1'b1;
+						startAddress <=  13'd105;
+					selectCounters <= 1'b0;	
+						startXWire <= 8'd0;
+						skip <= 1'b0;
+					end
+
+					else if (v0_encrypted_data == 32'd8) begin
+						if (!eraseV0E) selectRom <= 2'b1; 
+						draw <= 1'b1;
+						startAddress <=  13'd120;
+						selectCounters <= 1'b0;
+						startXWire <= 8'd0;
+						skip <= 1'b0;
+					end
+
+					else if (v0_encrypted_data == 32'd9) begin
+						if (!eraseV0E) selectRom <= 2'b1; 
+						draw <= 1'b1;
+						startAddress <=  13'd135;
+						selectCounters <= 1'b0;
+						startXWire <= 8'd0;
+						skip <= 1'b0;
+					end	
+					
+					else if (v0_encrypted_data == 4'hA) begin
+						if (!eraseV0E) selectRom <= 2'd2; 
+						drawLetter <= 1'b1;
+						startAddress <=  13'd0;
+						selectCounters <= 1'b1;
+						startXWire <= 8'd0;
+						skip <= 1'b0;
+					end
+					
+					else if (v0_encrypted_data == 4'hB) begin
+						if (!eraseV0E) selectRom <= 2'd2; 
+						drawLetter <= 1'b1;
+						startAddress <=  13'd15;
+						selectCounters <= 1'b1;
+						startXWire <= 8'd0;
+						skip <= 1'b0;
+					end
+					
+					else if (v0_encrypted_data == 4'hC) begin
+						if (!eraseV0E) selectRom <= 2'd2; 
+						drawLetter <= 1'b1;
+						startAddress <=  13'd30;
+						selectCounters <= 1'b1;
+						startXWire <= 8'd0;
+						skip <= 1'b0;
+					end
+					
+					else if (v0_encrypted_data == 4'hD) begin
+						if (!eraseV0E) selectRom <= 2'd2; 
+						drawLetter <= 1'b1;
+						startAddress <=  13'd45;
+						selectCounters <= 1'b1;
+						startXWire <= 8'd0;
+						skip <= 1'b0;
+					end
+					
+					else if (v0_encrypted_data == 4'hE) begin
+						if (!eraseV0E) selectRom <= 2'd2; 
+						drawLetter <= 1'b1;
+						startAddress <=  13'd60;
+						selectCounters <= 1'b1;
+						startXWire <= 8'd0;
+						skip <= 1'b0;
+					end
+					
+					else if (v0_encrypted_data == 4'hF) begin
+						if (!eraseV0E) selectRom <= 2'd2; 
+						drawLetter <= 1'b1;
+						startAddress <=  13'd75;
+						selectCounters <= 1'b1;
+						startXWire <= 8'd0;
+						skip <= 1'b0;
+					end
+					
+					// else will be the letters that we will have to add later
+					else skip <= 1'b1;
+					
+				end
+	
+				
+				if (drawV0 || eraseV0) begin
+						selectCounters <= 1'b0;
+						draw <= 1'b1;
+						startYWire <= 7'd25;
+						if (drawV0) begin
+							selectRom <= 2'b1;
+							v0flag <= 1'b1;
+						end
+						if (eraseV0) begin
+							selectRom <= 2'b0;
+							v0erase <= 1'b1;
+						end
+						
+					if (v0 == 32'd0) begin
+						startAddress <=  13'd0;
+						startXWire <= 8'd135;
+					end
+					
+					if (v0 == 32'd1) begin
+						startAddress <=  13'd15;
+						startXWire <= 8'd135;
+					end
+
+					if (v0 == 32'd2) begin
+						startAddress <=  13'd30;
+						startXWire <= 8'd135;
+					end
+
+					if (v0 == 32'd3) begin
+						startAddress <=  13'd45;
+						startXWire <= 8'd135;
+					end
+
+					if (v0 == 32'd4) begin
+						startAddress <=  13'd60;
+						startXWire <= 8'd135;
+					end
+
+					if (v0 == 32'd5) begin
+						startAddress <=  13'd75;
+						startXWire <= 8'd135;
+					end
+
+					if (v0 == 32'd6) begin
+						startAddress <=  13'd90; 
+						startXWire <= 8'd135;
+					end
+
+					if (v0 == 32'd7) begin
+						startAddress <=  13'd105; 
+						startXWire <= 8'd135;
+					end
+
+					if (v0 == 32'd8) begin
+						startAddress <=  13'd120;
+						startXWire <= 8'd135;
+					end
+
+					if (v0 == 32'd9) begin
+						startAddress <=  13'd135;
+						startXWire <= 8'd135;
+					end	
+					
+				end
 				
 				
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-					if (v0 == 32'd2) begin//
-					
-					     if (!chngstart) begin
-								startX <= 8'd25;
-								startY <= 7'd25;
-							end 
-							else if (chngstart) begin
-								startX <= 8'd25;
-								startY <= 7'd27;
-							end
-					
-						// draw 2 
-						if (xcounter != 2'd3) begin//
-							xcounter <= xcounter + 2'd1;
-							donedraw <= 1'b0;
-						end ///
-					
-						else if (xcounter == 2'd3) begin//
-							if (ycounter != 2'd2) begin
-								ycounter <= ycounter + 2'd1;
-								donedraw <= 1'b0;
-							end 
-							else if (ycounter == 2'd2 && done == 1'b0) begin
-								xcounter <= 2'd0;
-								ycounter <= 2'd0;
-								done <= 1'b1;
-								chngstart <= 1'b1;
-							end
-							else if (done) donedraw <= 1'b1;
-						end//
-
-		
-					end//
-								
-					
-				end//
-					
+				if (indexv1) begin
 				
+				
+					if (indexcounter == 4'd0) v1_encrypted_data <= v0[31:28];
+					if (indexcounter == 4'd1) v1_encrypted_data <= v0[27:24];
+					if (indexcounter == 4'd2) v1_encrypted_data <= v0[23:20];
+					if (indexcounter == 4'd3) v1_encrypted_data <= v0[19:16];
+					
+					if (indexcounter == 4'd4) v1_encrypted_data <= v1[15:12];
+					if (indexcounter == 4'd5) v1_encrypted_data <= v1[11:8];
+					if (indexcounter == 4'd6) v1_encrypted_data <= v1[7:4];
+					if (indexcounter == 4'd7) v1_encrypted_data <= v1[3:0];
+				end
+				
+				if (drawV1E || eraseV1E) begin
+						// draw <= 1'b1; 
+						// draw changes based on whether it is a letter or number
+						startYWire <= 7'd25;
+						// startYWire changes based on whether it is a letter or number
+						// for now we can keep because only testing numbers 
+						if (drawV1E) begin
+							selectRom <= 2'b1; 
+							// select rom will be different based on whether it was a letter or number
+							v1flag <= 1'b1;
+						end
+						if (eraseV1E) begin
+							selectRom <= 2'b0; 
+							// select rom will be 0 when erasing whether it was a number of letter
+							v1erase <= 1'b1;
+						end
+						
+					if (v1_encrypted_data == 32'd0) begin
+						draw <= 1'b1; // draw will be for numbers module
+						startAddress <=  13'd0;
+						startXWire <= 8'd0;
+						selectCounters <= 1'b0;
+						skip <= 1'b0;
+					end
+					
+					else if (v1_encrypted_data == 32'd1) begin
+						draw <= 1'b1;
+						selectCounters <= 1'b0;
+						startAddress <=  13'd15;
+						startXWire <= 8'd0;
+						skip <= 1'b0;
+					end
+
+					else if (v1_encrypted_data == 32'd2) begin
+						draw <= 1'b1;
+						startAddress <=  13'd30;
+						startXWire <= 8'd0;
+						selectCounters <= 1'b0;
+						skip <= 1'b0;
+					end
+
+					else if (v1_encrypted_data == 32'd3) begin
+						draw <= 1'b1;
+						startAddress <=  13'd45;
+						startXWire <= 8'd0;
+						selectCounters <= 1'b0;
+						skip <= 1'b0;
+					end
+
+					else if (v1_encrypted_data == 32'd4) begin
+						draw <= 1'b1;
+						startAddress <=  13'd60;
+						startXWire <= 8'd0;
+						skip <= 1'b0;
+						selectCounters <= 1'b0;
+					end
+
+					else if (v1_encrypted_data == 32'd5) begin
+						draw <= 1'b1;
+						startAddress <=  13'd75;
+						selectCounters <= 1'b0;
+						startXWire <= 8'd0;
+						skip <= 1'b0;
+					end
+
+					else if (v1_encrypted_data == 32'd6) begin
+						draw <= 1'b1;
+						startAddress <=  13'd90; 
+						selectCounters <= 1'b0;
+						startXWire <= 8'd0;
+						skip <= 1'b0;
+					end
+
+					else if (v1_encrypted_data == 32'd7) begin
+						draw <= 1'b1;
+						startAddress <=  13'd105;
+					selectCounters <= 1'b0;	
+						startXWire <= 8'd0;
+						skip <= 1'b0;
+					end
+
+					else if (v1_encrypted_data == 32'd8) begin
+						draw <= 1'b1;
+						startAddress <=  13'd120;
+						startXWire <= 8'd0;
+						selectCounters <= 1'b0;
+						skip <= 1'b0;
+					end
+
+					else if (v1_encrypted_data == 32'd9) begin
+						draw <= 1'b1;
+						startAddress <=  13'd135;
+						selectCounters <= 1'b0;
+						startXWire <= 8'd0;
+						skip <= 1'b0;
+					end	
+					
+					else if (v1_encrypted_data == 4'hA) begin
+						if (!eraseV0E) selectRom <= 2'd2; 
+						drawLetter <= 1'b1;
+						startAddress <=  13'd0;
+						selectCounters <= 1'b1;
+						startXWire <= 8'd0;
+						skip <= 1'b0;
+					end
+					
+					else if (v1_encrypted_data == 4'hB) begin
+						if (!eraseV0E) selectRom <= 2'd2; 
+						drawLetter <= 1'b1;
+						startAddress <=  13'd15;
+						selectCounters <= 1'b1;
+						startXWire <= 8'd0;
+						skip <= 1'b0;
+					end
+					
+					else if (v1_encrypted_data == 4'hC) begin
+						if (!eraseV0E) selectRom <= 2'd2; 
+						drawLetter <= 1'b1;
+						startAddress <=  13'd30;
+						selectCounters <= 1'b1;
+						startXWire <= 8'd0;
+						skip <= 1'b0;
+					end
+					
+					else if (v1_encrypted_data == 4'hD) begin
+						if (!eraseV0E) selectRom <= 2'd2; 
+						drawLetter <= 1'b1;
+						startAddress <=  13'd45;
+						selectCounters <= 1'b1;
+						startXWire <= 8'd0;
+						skip <= 1'b0;
+					end
+					
+					else if (v1_encrypted_data == 4'hE) begin
+						if (!eraseV0E) selectRom <= 2'd2; 
+						drawLetter <= 1'b1;
+						startAddress <=  13'd60;
+						selectCounters <= 1'b1;
+						startXWire <= 8'd0;
+						skip <= 1'b0;
+					end
+					
+					else if (v1_encrypted_data == 4'hF) begin
+						if (!eraseV0E) selectRom <= 2'd2; 
+						drawLetter <= 1'b1;
+						startAddress <=  13'd75;
+						selectCounters <= 1'b1;
+						startXWire <= 8'd0;
+						skip <= 1'b0;
+					end
+					
+					// else will be the letters that we will have to add later
+					else skip <= 1'b1;
+					
+				end
+				
+				
+				
+				if (drawV1 || eraseV1) begin
+				selectCounters <= 1'b0;
+						draw <= 1'b1;
+						startYWire <= 7'd25;
+						
+						if (drawV1) begin
+							selectRom <= 2'b1;
+							v1flag <= 1'b1;
+						end
+						if (eraseV1) begin
+							selectRom <= 2'b0;
+							v1erase <= 1'b1;
+						end
+						
+					if (v1 == 32'd0) begin
+						startAddress <=  13'd0;
+						startXWire <= 8'd135;
+					end
+					
+					if (v1 == 32'd1) begin
+						startAddress <=  13'd15;
+						startXWire <= 8'd135;
+					end
+
+					if (v1 == 32'd2) begin
+						startAddress <=  13'd30;
+						startXWire <= 8'd135;
+					end
+
+					if (v1 == 32'd3) begin
+						startAddress <=  13'd45;
+						startXWire <= 8'd135;
+					end
+
+					if (v1 == 32'd4) begin
+						startAddress <=  13'd60;
+						startXWire <= 8'd135;
+					end
+
+					if (v1 == 32'd5) begin
+						startAddress <=  13'd75;
+						startXWire <= 8'd135;
+					end
+
+					if (v1 == 32'd6) begin
+						startAddress <=  13'd91;
+						startXWire <= 8'd135;
+					end
+
+					if (v1 == 32'd7) begin
+						startAddress <=  13'd106;
+						startXWire <= 8'd135;
+					end
+
+					if (v1 == 32'd8) begin
+						startAddress <=  13'd120;
+						startXWire <= 8'd135;
+					end
+
+					if (v1 == 32'd9) begin
+						startAddress <=  13'd135;
+						startXWire <= 8'd135;
+					end	
+					
+				end
 				
 				if(ld_enc_sum)
                 sum <= sum + delta; 
@@ -688,13 +1430,56 @@ localparam delta = 32'h9e3779b9;
 					 end			
 			end
     end
+	 
+	 RateDivider r0 (enableRateDivider, clk, 26'd833334, rateDividerOutput, resetn);
+	 
+	 assign enableWire = (rateDividerOutput == 26'd0)? 1'b1:1'b0;
+	  
+	 DisplayCounter d0 (enableWire, clk, frameOutput, resetn);
 
 endmodule
 
+module RateDivider (input enable, input Clock, input [25:0] D, output reg [25:0] Q, input reset);
+	
+	always @ (posedge Clock, negedge reset)
+		begin
+				
+			if (reset == 0)
+				Q <= 26'd0;
+				
+			else if (enable == 1'b0 || (Q == 26'd0)) 
+				Q <= D; 
+				
+			else 
+			
+				Q <= Q - 26'd1; 		
+		end
+			
+endmodule 
+
+module DisplayCounter (input Enable, Clock, output reg [3:0] Q, input reset);
+	
+	always @ (posedge Clock)
+		begin
+			
+			if (reset == 0) Q <= 4'd0; 
+			
+			else if (Q == 4'd15) Q <= 4'd0;
+			
+			else if (Enable == 1'b1) Q <= Q + 4'b0001;
+				
+		end
+	
+endmodule 
+
 module control (
-	 input clk,
+	 input clk, skip, 		donedrawv0L,
+		 donedrawv1L,
+		  doneerasev0L,
+		  doneerasev1L, input [3:0] frameOutput,
 	 
-	 output reg resetFlag, load, drawV0,
+	 output reg resetFlag, load, drawV0, eraseV0, eraseV1, drawV1,
+	 drawV0E, eraseV0E, drawV1E, eraseV1E,
 	 displayV0, displayV1, 
 	 setSum,
 	  
@@ -703,39 +1488,55 @@ module control (
 	 
 	 ld_dec_sum, ld_dec_results_1,
 	 ld_dec_results_2, ld_dec_v0, ld_dec_v1,
-	 plotOutput,
+	 plotOutput, enableRateDivider, indexv0, indexv1,
 	 
 	 output reg [3:0] ld_counter,	 
 	 input [7:0] received_data,
-	 input received_data_en, donedraw
+	 input received_data_en, donedrawv0, doneerasev0, doneerasev1, donedrawv1,
+	 output reg [3:0] /*[2:0]*/indexcounter//,
+	// output reg [6:0] current_state
 );
 
-    reg [5:0] current_state, next_state; 
+    reg [6:0] current_state, next_state; 
     reg [5:0] counter = 6'd0;
+	 
 	 reg ldcountFlag = 1'b0;
 	 reg spcpressed = 1'b0;
 
 	  
-    localparam  LOAD              = 5'd0,
-					 LOAD_WAIT         = 5'd1,
-		          WAIT_FOR_ENCRYPT  = 5'd2,
-					 E_SUM             = 5'd3,
-					 E_RESULTS_1       = 5'd4,
-					 E_V0              = 5'd5,
-					 E_RESULTS_2       = 5'd6,
-					 E_V1              = 5'd7,
-					 E_DISPLAY_V0      = 5'd8,
-					 E_DISPLAY_V1      = 5'd9,
-					 WAIT_FOR_DECRYPT  = 5'd10,
-					 D_RESULTS_1       = 5'd11,
-					 D_V1              = 5'd12,
-					 D_RESULTS_2       = 5'd13,
-					 D_V0              = 5'd14,
-					 D_SUM             = 5'd15,
-					 D_DISPLAY_V0      = 5'd16,
-					 D_DRAW_V0         = 5'd17,
-					 D_DISPLAY_V1      = 5'd18,
-					 FINAL             = 5'd19;
+    localparam  LOAD              = 7'd0,
+					 LOAD_WAIT         = 7'd1,
+		          WAIT_FOR_ENCRYPT  = 7'd2,
+					 E_SUM             = 7'd3,
+					 E_RESULTS_1       = 7'd4,
+					 E_V0              = 7'd5,
+					 E_RESULTS_2       = 7'd6,
+					 E_V1              = 7'd7,
+					 E_DISPLAY_V0      = 7'd8,
+					 E_INDEX_V0        = 7'd25,
+					 E_DRAW_V0         = 7'd26,
+					 E_DRAW_V0_WAIT    = 7'd27,
+					 E_ERASE_V0        = 7'd28,
+					 E_DISPLAY_V1      = 7'd9,
+					 E_INDEX_V1        = 7'd29,
+					 E_DRAW_V1         = 7'd30,
+					 E_DRAW_V1_WAIT    = 7'd31,
+					 E_ERASE_V1        = 7'd32,
+					 WAIT_FOR_DECRYPT  = 7'd10,
+					 D_RESULTS_1       = 7'd11,
+					 D_V1              = 7'd12,
+					 D_RESULTS_2       = 7'd13,
+					 D_V0              = 7'd14,
+					 D_SUM             = 7'd15,
+					 D_DISPLAY_V0      = 7'd16,
+					 D_DRAW_V0         = 7'd17,
+					 D_DRAW_V0_WAIT    = 7'd18,
+					 D_ERASE_V0        = 7'd19,
+					 D_DISPLAY_V1      = 7'd20,
+					 D_DRAW_V1         = 7'd21,
+					 D_DRAW_V1_WAIT    = 7'd22,
+					 D_ERASE_V1        = 7'd23,
+					 FINAL             = 7'd24;
     
 	
 	    // Next state logic aka our state table
@@ -759,9 +1560,31 @@ module control (
 					 
 					 E_V1: next_state = (counter == 6'd32) ? E_DISPLAY_V0: E_SUM;
 					 	 
-					 E_DISPLAY_V0: next_state = E_DISPLAY_V1;
+					 E_DISPLAY_V0: next_state = E_INDEX_V0;	 
 					 
-					 E_DISPLAY_V1: next_state = WAIT_FOR_DECRYPT;
+					 E_INDEX_V0: next_state = (indexcounter == 4'd8/*indexcounter == 3'd4*/) ? E_DISPLAY_V1 : E_DRAW_V0;
+					 
+					 E_DRAW_V0: begin
+							if (!skip) next_state = (donedrawv0 || donedrawv0L) ? E_DRAW_V0_WAIT : E_DRAW_V0;
+							else next_state = E_INDEX_V0;
+					 end
+					 
+					 E_DRAW_V0_WAIT: next_state = (frameOutput == 4'd15) ? E_ERASE_V0 : E_DRAW_V0_WAIT;
+					  
+					 E_ERASE_V0: next_state = (doneerasev0 || doneerasev0L) ? E_INDEX_V0 : E_ERASE_V0;
+						 
+					 E_DISPLAY_V1: next_state = (received_data == 8'h21) ?  E_INDEX_V1 : E_DISPLAY_V1; // it was just next_state = E_INDEX_V1;, now only if they press C it will continue 
+					 
+					 E_INDEX_V1: next_state = (indexcounter == 4'd8 /*indexcounter == 3'd4*/) ?  WAIT_FOR_DECRYPT : E_DRAW_V1;
+					 
+					 E_DRAW_V1:  begin
+							if (!skip) next_state = (donedrawv1 || donedrawv1L) ? E_DRAW_V1_WAIT : E_DRAW_V1;
+							else next_state = E_INDEX_V1;
+					 end
+					 
+					 E_DRAW_V1_WAIT: next_state = (frameOutput == 4'd15) ? E_ERASE_V1 : E_DRAW_V1_WAIT;
+					 
+					 E_ERASE_V1: next_state = (doneerasev1 || doneerasev1L) ? E_INDEX_V1 : E_ERASE_V1;
 					 
 					 WAIT_FOR_DECRYPT: next_state = (received_data == 8'h23) ? D_RESULTS_1: WAIT_FOR_DECRYPT;
 					 
@@ -777,9 +1600,19 @@ module control (
 					 
 					 D_DISPLAY_V0: next_state = D_DRAW_V0/*D_DISPLAY_V1*/;
 					 
-					 D_DRAW_V0: next_state = (donedraw) ? D_DISPLAY_V1 : D_DRAW_V0;
+					 D_DRAW_V0: next_state = (donedrawv0) ? D_DRAW_V0_WAIT/*D_DISPLAY_V1*/ : D_DRAW_V0;
 					 
-					 D_DISPLAY_V1: next_state = FINAL;
+					 D_DRAW_V0_WAIT: next_state = (frameOutput == 4'd15) ? D_ERASE_V0 : D_DRAW_V0_WAIT;
+					  
+					 D_ERASE_V0: next_state = (doneerasev0) ? D_DISPLAY_V1 : D_ERASE_V0;
+					 
+					 D_DISPLAY_V1: next_state = (received_data == 8'h21) ? D_DRAW_V1 : D_DISPLAY_V1; // it was just next_state = D_DRAW_V1;, now only if they press C it will continue 
+					 
+					 D_DRAW_V1: next_state = (donedrawv1) ? D_DRAW_V1_WAIT : D_DRAW_V1;
+					 
+					 D_DRAW_V1_WAIT: next_state = (frameOutput == 4'd15) ? D_ERASE_V1 : D_DRAW_V1_WAIT;
+					 
+					 D_ERASE_V1: next_state = (doneerasev1) ? FINAL : D_ERASE_V1;
 					 
 					 FINAL: next_state = LOAD;
 
@@ -796,8 +1629,19 @@ module control (
 		  load = 1'b0;
 		  displayV0 = 1'b0;
 		  displayV1 = 1'b0;
+		  
 		  drawV0 = 1'b0;
+		  eraseV0 = 1'b0;
+		  eraseV1 = 1'b0;
+		  drawV1 = 1'b0;
+		  
+		  drawV0E = 1'b0;
+		  eraseV0E = 1'b0;
+		  drawV1E = 1'b0;
+		  eraseV1E = 1'b0;
+		  
 		  plotOutput = 1'b0;
+		  enableRateDivider = 1'b0;
 		  
 		  ld_enc_sum = 1'b0;
 		  ld_enc_results_1 = 1'b0;
@@ -813,6 +1657,9 @@ module control (
 
 		  resetFlag = 1'b0;
 		  setSum = 1'b0;
+		  
+		   indexv0 = 1'b0;
+			indexv1 = 1'b0;
 
         case (current_state)
 		
@@ -843,10 +1690,58 @@ module control (
 				E_DISPLAY_V0: begin
 					 displayV0 = 1'b1;
 					 end
+					 
+				E_INDEX_V0: begin
+					indexv0 = 1'b1;				
+					end
 				
+				E_DRAW_V0: begin
+					 drawV0E = 1'b1;
+					 plotOutput = 1'b1;
+					 end
+					 
+			   E_DRAW_V0_WAIT: begin
+					enableRateDivider = 1'b1;
+					end
+				
+				E_ERASE_V0: begin
+					eraseV0E = 1'b1;
+					plotOutput = 1'b1;
+					end
+					
+					
+					
+					
+					
 				E_DISPLAY_V1: begin
 					 displayV1 = 1'b1;
 					 end
+					 
+				E_INDEX_V1: begin
+					indexv1 = 1'b1;				
+					end
+				
+				E_DRAW_V1: begin
+					 drawV1E = 1'b1;
+					 plotOutput = 1'b1;
+					 end
+					 
+			   E_DRAW_V1_WAIT: begin
+					enableRateDivider = 1'b1;
+					end
+				
+				E_ERASE_V1: begin
+					eraseV1E = 1'b1;
+					plotOutput = 1'b1;
+					end
+					 
+					 
+					 
+					 
+					 
+					 
+					 
+					 
 					 
 			   WAIT_FOR_DECRYPT: begin
 					 setSum = 1'b1;
@@ -882,13 +1777,37 @@ module control (
 					 drawV0 = 1'b1;
 					 plotOutput = 1'b1;
 					 end
+					 
+				D_DRAW_V0_WAIT: begin
+					enableRateDivider = 1'b1;
+					end
+				
+				D_ERASE_V0: begin
+					eraseV0 = 1'b1;
+					plotOutput = 1'b1;
+					end
 				
 				D_DISPLAY_V1: begin
 					 displayV1 = 1'b1;
 					 end
+					 
+				D_DRAW_V1: begin
+					 drawV1 = 1'b1;
+					 plotOutput = 1'b1;
+					 end
+					 
+				D_DRAW_V1_WAIT: begin
+					enableRateDivider = 1'b1;
+					end
+					
+				D_ERASE_V1: begin
+					eraseV1 = 1'b1;
+					plotOutput = 1'b1;
+					end
 				
 				FINAL: begin
 					resetFlag = 1'b1;
+					// plotOutput = 1'b1;
 					end
            
         // default: don't need default since we already made sure all of our outputs were assigned a value at the start of the always block
@@ -900,12 +1819,14 @@ module control (
     always@(posedge clk)
     begin: state_FFs
         if(received_data == 8'h76)
-            current_state <= FINAL;
+            //current_state <= FINAL;
+				current_state <= LOAD;
         else begin
             current_state <= next_state;
 				
 				if (current_state == LOAD)
 		      begin
+				 indexcounter <= /*3*/4'd0;
 				 if (received_data_en && received_data == 8'h29 && ldcountFlag == 1'b0 && spcpressed == 1'b0) begin
 					ld_counter <= ld_counter + 4'd1;
 					ldcountFlag <= 1'b1;
@@ -929,14 +1850,31 @@ module control (
 				  counter <= counter + 6'd1;
 			   end
 				
+				if (current_state == E_INDEX_V0)
+		      begin
+				  indexcounter <= indexcounter + /*3*/4'd1;
+			   end
+				
+				if (current_state == E_INDEX_V1)
+		      begin
+				  indexcounter <= indexcounter + /*3*/4'd1;
+			   end
+				
+				if (current_state == E_DISPLAY_V0 || current_state == E_DISPLAY_V1)
+		      begin
+				  indexcounter <= /*3*/4'd0;
+			   end
+				
 				if (current_state == WAIT_FOR_ENCRYPT)
 		      begin
 				  counter <= 6'd0;
+				  indexcounter <= /*3*/4'd0;
 			   end
 				
 				if (current_state == WAIT_FOR_DECRYPT)
 		      begin
 				  counter <= 6'd0;
+				  indexcounter <= /*3*/4'd0;
 			   end
 				
 				if (current_state == FINAL)
