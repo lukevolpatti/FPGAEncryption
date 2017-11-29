@@ -109,7 +109,7 @@ output [9:0]
 	.startYF(startYF)
 	);
 	
-drawDecryptedOutput o (
+drawNumberOutput o (
 		 .clk(CLOCK_50),
 		 .draw(draw),
 		 .startXWire(startXWire),
@@ -342,7 +342,7 @@ module selectCounter (
 	
 endmodule
 
-module drawDecryptedOutput (
+module drawNumberOutput (
 		 input clk,
 		 input draw,
 		 input v0flag, v1flag, v0erase, v1erase,
@@ -931,7 +931,7 @@ localparam delta = 32'h9e3779b9;
 						draw <= 1'b1; // draw will be for numbers module
 						startAddress <=  13'd0;
 						selectCounters <= 1'b0;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						skip <= 1'b0;
 					end
 					
@@ -940,7 +940,7 @@ localparam delta = 32'h9e3779b9;
 						draw <= 1'b1;
 						startAddress <=  13'd15;
 						selectCounters <= 1'b0;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						skip <= 1'b0;
 					end
 
@@ -949,7 +949,7 @@ localparam delta = 32'h9e3779b9;
 						draw <= 1'b1;
 						startAddress <=  13'd30;
 						selectCounters <= 1'b0;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						skip <= 1'b0;
 					end
 
@@ -958,7 +958,7 @@ localparam delta = 32'h9e3779b9;
 						draw <= 1'b1;
 						startAddress <=  13'd45;
 						selectCounters <= 1'b0;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						skip <= 1'b0;
 					end
 
@@ -967,7 +967,7 @@ localparam delta = 32'h9e3779b9;
 						draw <= 1'b1;
 						startAddress <=  13'd60;
 						selectCounters <= 1'b0;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						skip <= 1'b0;
 					end
 
@@ -976,7 +976,7 @@ localparam delta = 32'h9e3779b9;
 						draw <= 1'b1;
 						startAddress <=  13'd75;
 						selectCounters <= 1'b0;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						skip <= 1'b0;
 					end
 
@@ -985,7 +985,7 @@ localparam delta = 32'h9e3779b9;
 						draw <= 1'b1;
 						startAddress <=  13'd90;
 					selectCounters <= 1'b0;	
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						skip <= 1'b0;
 					end
 
@@ -994,7 +994,7 @@ localparam delta = 32'h9e3779b9;
 						draw <= 1'b1;
 						startAddress <=  13'd105;
 					selectCounters <= 1'b0;	
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						skip <= 1'b0;
 					end
 
@@ -1003,7 +1003,7 @@ localparam delta = 32'h9e3779b9;
 						draw <= 1'b1;
 						startAddress <=  13'd120;
 						selectCounters <= 1'b0;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						skip <= 1'b0;
 					end
 
@@ -1012,7 +1012,7 @@ localparam delta = 32'h9e3779b9;
 						draw <= 1'b1;
 						startAddress <=  13'd135;
 						selectCounters <= 1'b0;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						skip <= 1'b0;
 					end	
 					
@@ -1021,7 +1021,7 @@ localparam delta = 32'h9e3779b9;
 						drawLetter <= 1'b1;
 						startAddress <=  13'd0;
 						selectCounters <= 1'b1;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						skip <= 1'b0;
 					end
 					
@@ -1030,7 +1030,7 @@ localparam delta = 32'h9e3779b9;
 						drawLetter <= 1'b1;
 						startAddress <=  13'd15;
 						selectCounters <= 1'b1;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						skip <= 1'b0;
 					end
 					
@@ -1039,7 +1039,7 @@ localparam delta = 32'h9e3779b9;
 						drawLetter <= 1'b1;
 						startAddress <=  13'd30;
 						selectCounters <= 1'b1;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						skip <= 1'b0;
 					end
 					
@@ -1048,7 +1048,7 @@ localparam delta = 32'h9e3779b9;
 						drawLetter <= 1'b1;
 						startAddress <=  13'd45;
 						selectCounters <= 1'b1;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						skip <= 1'b0;
 					end
 					
@@ -1057,7 +1057,7 @@ localparam delta = 32'h9e3779b9;
 						drawLetter <= 1'b1;
 						startAddress <=  13'd60;
 						selectCounters <= 1'b1;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						skip <= 1'b0;
 					end
 					
@@ -1066,7 +1066,7 @@ localparam delta = 32'h9e3779b9;
 						drawLetter <= 1'b1;
 						startAddress <=  13'd75;
 						selectCounters <= 1'b1;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						skip <= 1'b0;
 					end
 					
@@ -1091,52 +1091,52 @@ localparam delta = 32'h9e3779b9;
 						
 					if (v0 == 32'd0) begin
 						startAddress <=  13'd0;
-						startXWire <= 8'd135;
+						startXWire <= 8'd105;
 					end
 					
 					if (v0 == 32'd1) begin
 						startAddress <=  13'd15;
-						startXWire <= 8'd135;
+						startXWire <= 8'd105;
 					end
 
 					if (v0 == 32'd2) begin
 						startAddress <=  13'd30;
-						startXWire <= 8'd135;
+						startXWire <= 8'd105;
 					end
 
 					if (v0 == 32'd3) begin
 						startAddress <=  13'd45;
-						startXWire <= 8'd135;
+						startXWire <= 8'd105;
 					end
 
 					if (v0 == 32'd4) begin
 						startAddress <=  13'd60;
-						startXWire <= 8'd135;
+						startXWire <= 8'd105;
 					end
 
 					if (v0 == 32'd5) begin
 						startAddress <=  13'd75;
-						startXWire <= 8'd135;
+						startXWire <= 8'd105;
 					end
 
 					if (v0 == 32'd6) begin
 						startAddress <=  13'd90; 
-						startXWire <= 8'd135;
+						startXWire <= 8'd105;
 					end
 
 					if (v0 == 32'd7) begin
 						startAddress <=  13'd105; 
-						startXWire <= 8'd135;
+						startXWire <= 8'd105;
 					end
 
 					if (v0 == 32'd8) begin
 						startAddress <=  13'd120;
-						startXWire <= 8'd135;
+						startXWire <= 8'd105;
 					end
 
 					if (v0 == 32'd9) begin
 						startAddress <=  13'd135;
-						startXWire <= 8'd135;
+						startXWire <= 8'd105;
 					end	
 					
 				end
@@ -1176,7 +1176,7 @@ localparam delta = 32'h9e3779b9;
 					if (v1_encrypted_data == 32'd0) begin
 						draw <= 1'b1; // draw will be for numbers module
 						startAddress <=  13'd0;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						selectCounters <= 1'b0;
 						skip <= 1'b0;
 					end
@@ -1185,14 +1185,14 @@ localparam delta = 32'h9e3779b9;
 						draw <= 1'b1;
 						selectCounters <= 1'b0;
 						startAddress <=  13'd15;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						skip <= 1'b0;
 					end
 
 					else if (v1_encrypted_data == 32'd2) begin
 						draw <= 1'b1;
 						startAddress <=  13'd30;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						selectCounters <= 1'b0;
 						skip <= 1'b0;
 					end
@@ -1200,7 +1200,7 @@ localparam delta = 32'h9e3779b9;
 					else if (v1_encrypted_data == 32'd3) begin
 						draw <= 1'b1;
 						startAddress <=  13'd45;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						selectCounters <= 1'b0;
 						skip <= 1'b0;
 					end
@@ -1208,7 +1208,7 @@ localparam delta = 32'h9e3779b9;
 					else if (v1_encrypted_data == 32'd4) begin
 						draw <= 1'b1;
 						startAddress <=  13'd60;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						skip <= 1'b0;
 						selectCounters <= 1'b0;
 					end
@@ -1217,7 +1217,7 @@ localparam delta = 32'h9e3779b9;
 						draw <= 1'b1;
 						startAddress <=  13'd75;
 						selectCounters <= 1'b0;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						skip <= 1'b0;
 					end
 
@@ -1225,7 +1225,7 @@ localparam delta = 32'h9e3779b9;
 						draw <= 1'b1;
 						startAddress <=  13'd90; 
 						selectCounters <= 1'b0;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						skip <= 1'b0;
 					end
 
@@ -1233,14 +1233,14 @@ localparam delta = 32'h9e3779b9;
 						draw <= 1'b1;
 						startAddress <=  13'd105;
 					selectCounters <= 1'b0;	
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						skip <= 1'b0;
 					end
 
 					else if (v1_encrypted_data == 32'd8) begin
 						draw <= 1'b1;
 						startAddress <=  13'd120;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						selectCounters <= 1'b0;
 						skip <= 1'b0;
 					end
@@ -1249,7 +1249,7 @@ localparam delta = 32'h9e3779b9;
 						draw <= 1'b1;
 						startAddress <=  13'd135;
 						selectCounters <= 1'b0;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						skip <= 1'b0;
 					end	
 					
@@ -1258,7 +1258,7 @@ localparam delta = 32'h9e3779b9;
 						drawLetter <= 1'b1;
 						startAddress <=  13'd0;
 						selectCounters <= 1'b1;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						skip <= 1'b0;
 					end
 					
@@ -1267,7 +1267,7 @@ localparam delta = 32'h9e3779b9;
 						drawLetter <= 1'b1;
 						startAddress <=  13'd15;
 						selectCounters <= 1'b1;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						skip <= 1'b0;
 					end
 					
@@ -1276,7 +1276,7 @@ localparam delta = 32'h9e3779b9;
 						drawLetter <= 1'b1;
 						startAddress <=  13'd30;
 						selectCounters <= 1'b1;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						skip <= 1'b0;
 					end
 					
@@ -1285,7 +1285,7 @@ localparam delta = 32'h9e3779b9;
 						drawLetter <= 1'b1;
 						startAddress <=  13'd45;
 						selectCounters <= 1'b1;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						skip <= 1'b0;
 					end
 					
@@ -1294,7 +1294,7 @@ localparam delta = 32'h9e3779b9;
 						drawLetter <= 1'b1;
 						startAddress <=  13'd60;
 						selectCounters <= 1'b1;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						skip <= 1'b0;
 					end
 					
@@ -1303,7 +1303,7 @@ localparam delta = 32'h9e3779b9;
 						drawLetter <= 1'b1;
 						startAddress <=  13'd75;
 						selectCounters <= 1'b1;
-						startXWire <= 8'd0;
+						startXWire <= 8'd15;
 						skip <= 1'b0;
 					end
 					
@@ -1330,52 +1330,52 @@ localparam delta = 32'h9e3779b9;
 						
 					if (v1 == 32'd0) begin
 						startAddress <=  13'd0;
-						startXWire <= 8'd135;
+						startXWire <= 8'd105;
 					end
 					
 					if (v1 == 32'd1) begin
 						startAddress <=  13'd15;
-						startXWire <= 8'd135;
+						startXWire <= 8'd105;
 					end
 
 					if (v1 == 32'd2) begin
 						startAddress <=  13'd30;
-						startXWire <= 8'd135;
+						startXWire <= 8'd105;
 					end
 
 					if (v1 == 32'd3) begin
 						startAddress <=  13'd45;
-						startXWire <= 8'd135;
+						startXWire <= 8'd105;
 					end
 
 					if (v1 == 32'd4) begin
 						startAddress <=  13'd60;
-						startXWire <= 8'd135;
+						startXWire <= 8'd105;
 					end
 
 					if (v1 == 32'd5) begin
 						startAddress <=  13'd75;
-						startXWire <= 8'd135;
+						startXWire <= 8'd105;
 					end
 
 					if (v1 == 32'd6) begin
-						startAddress <=  13'd91;
-						startXWire <= 8'd135;
+						startAddress <=  13'd90;
+						startXWire <= 8'd105;
 					end
 
 					if (v1 == 32'd7) begin
-						startAddress <=  13'd106;
-						startXWire <= 8'd135;
+						startAddress <=  13'd105;
+						startXWire <= 8'd105;
 					end
 
 					if (v1 == 32'd8) begin
 						startAddress <=  13'd120;
-						startXWire <= 8'd135;
+						startXWire <= 8'd105;
 					end
 
 					if (v1 == 32'd9) begin
 						startAddress <=  13'd135;
-						startXWire <= 8'd135;
+						startXWire <= 8'd105;
 					end	
 					
 				end
